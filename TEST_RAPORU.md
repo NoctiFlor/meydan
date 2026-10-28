@@ -72,6 +72,12 @@ emülatör bölümündedir.
 
 ## Paket ve kaynak kontrolleri
 
+GitHub Actions bulut derlemesi de Ubuntu 24.04 / Python 3.12 / JDK 21 üzerinde
+başarıyla tamamlandı. İmza, hizalama ve paket testleri geçti. Buluttan indirilen
+APK'nın sertifikası mevcut yerel APK ile aynı; gömülü oyun içeriği de eşleşiyor.
+[Çalışma kaydı](https://github.com/NoctiFlor/meydan/actions/runs/40751788008).
+Bu ek kontrol Android emülatörü veya gerçek telefon testi değildir.
+
 - APK imzası: v2 ve v3 doğrulaması geçti; ZIP hizalama kontrolü geçti.
 - Teslim APK'sında WebView hata ayıklaması kapalı; INTERNET izni yok.
 - `test_package.py`: APK'daki HTML güncel üretimle birebir aynı.

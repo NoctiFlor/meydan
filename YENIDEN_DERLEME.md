@@ -11,6 +11,16 @@ Android 8.0 ve üzeri, güncel Android System WebView gerekir. Oyun yatay açıl
 APK'yı telefona aktarın ve dosyayı açın. Android isterse bu dosyayı açtığınız
 uygulama için yükleme iznini verin.
 
+## Bulutta ve bilgisayarsız geliştirme
+
+Özel kaynak deposu: https://github.com/NoctiFlor/meydan
+`main` dalındaki değişiklikler GitHub Actions üzerinde Linux ortamında APK üretir.
+Actions → MEYDAN APK → son başarılı çalışma → Artifacts bölümünden çıktıyı indirin.
+İmzalama anahtarı depoya eklenmez; `MEYDAN_KEYSTORE_BASE64` Actions secret alanında tutulur.
+Codex Cloud için bu depoyu bir bulut ortamına ekleyip ortamı yayımlayın; sonra
+telefonunuzdan bu ortamı seçerek çalışın. Yerel sohbet kendiliğinden buluta taşınmaz.
+Codespaces ayarları da depoda hazırdır; Python ile web önizleme açılabilir.
+
 ## Windows'ta derleme
 
 Gerekenler: Python 3.12 veya üzeri, JDK 21 veya 24, Android SDK Platform 36 ve

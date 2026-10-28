@@ -1,0 +1,16 @@
+# Generated deliveries; produced by CI from source.
+/MEYDAN*.html
+/MEYDAN*.apk
+/MEYDAN*.idsig
+/MEYDAN*.zip
+/dist/index.html
+/android/build/
+/android/test-avd/
+/android/local-signing.p12
+*.log
+__pycache__/
+.venv/
+.openai/
+.codex/
+.agents/
+/tools-local/

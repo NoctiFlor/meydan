@@ -1,0 +1,4 @@
+build/
+local-signing.p12
+test-avd/
+*.log

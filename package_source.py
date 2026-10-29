@@ -13,7 +13,7 @@ with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as arch
         archive.write(file, Path('MEYDAN') / relative)
 with zipfile.ZipFile(output) as archive:
     assert archive.testzip() is None
-    for required in ('build_apk.py', 'build_standalone.py', 'shell.html', 'dist/game.js',
+    for required in ('build_apk.py', 'build_standalone.py', 'shell.html', 'dist/game.js', 'dist/gameplay.js', 'tests/gameplay.cjs',
                      'dist/assets/Michelle.glb', 'dist/assets/Xbot.glb', 'dist/beatmaps/meydan_demo.json',
                      'android/src/com/bahri/meydan/MainActivity.java', 'YENIDEN_DERLEME.md'):
         assert 'MEYDAN/' + required in archive.namelist(), required

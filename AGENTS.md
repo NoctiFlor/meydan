@@ -1,6 +1,9 @@
 # MEYDAN project guidance
 
 - Edit `dist/game.js` and `shell.html`; generated HTML files are build outputs.
+- Shared analog input and sequence/timing rules live in `dist/gameplay.js`; run `node tests/gameplay.cjs` after changing them.
+- Dance uses horizontal sequence entry followed by a single timing confirmation. Direction entry never awards points; wrong directions reset the sequence.
+- Joystick input is a continuous vector with radial deadzone, not four/eight direction snapping. Keep second-pointer camera ownership independent.
 - Models are in `dist/assets`, beatmaps in `dist/beatmaps`, vendor modules in `dist/vendor`.
 - Android source is in `android/src`; use `python build_apk.py` with JDK and SDK installed.
 - `python build_standalone.py` needs only Python's standard library.

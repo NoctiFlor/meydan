@@ -85,9 +85,9 @@ try:
     for k in 'wasdw': straight(k,.8)
     print('Direction changes passed',flush=True)
     reset()
-    send_cdp('Input.dispatchMouseEvent',{'type':'mousePressed','x':400,'y':320,'button':'right','clickCount':1})
-    send_cdp('Input.dispatchMouseEvent',{'type':'mouseMoved','x':620,'y':350,'button':'right','buttons':2})
-    send_cdp('Input.dispatchMouseEvent',{'type':'mouseReleased','x':620,'y':350,'button':'right','clickCount':1})
+    send_cdp('Input.dispatchMouseEvent',{'type':'mousePressed','x':240,'y':140,'button':'right','clickCount':1})
+    send_cdp('Input.dispatchMouseEvent',{'type':'mouseMoved','x':380,'y':150,'button':'right','buttons':2})
+    send_cdp('Input.dispatchMouseEvent',{'type':'mouseReleased','x':380,'y':150,'button':'right','clickCount':1})
     assert abs(snapshot()['orbit']-math.pi)>.5,'Mouse orbit did not respond'
     straight('w',3.2)
     print('Mouse orbit and walking beyond former 2.5s recenter delay passed',flush=True)

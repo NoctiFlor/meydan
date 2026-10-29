@@ -1,4 +1,4 @@
-# MEYDAN 1.1 — Kurulum ve yeniden derleme
+# MEYDAN 1.2 — Kurulum ve yeniden derleme
 
 ## Teslim dosyaları
 
@@ -60,16 +60,16 @@ Testler için ayrıca Chrome ve aşağıdaki Python bağımlılığı gerekir:
 ```powershell
 py -3.12 -m pip install -r requirements-test.txt
 py -3.12 test_movement_camera.py
-py -3.12 test_mobile.py
-py -3.12 test_touch_acceptance.py
+node tests/gameplay.cjs
+py -3.12 test_joystick_sequence.py
 ```
 
 `test_movement_camera.py`: masaüstünde W/A/S/D, yön değişimi, fare ve dans sonrası yürüyüş.
-`test_mobile.py`: temel dokunmatik akışlar.
-`test_touch_acceptance.py`: çevrimdışı yükleme, düz yürüyüş, çoklu parmak,
-parmak iptali, yaşam döngüsü, menü önceliği, pointerdown ve tek puan kontrolü.
+`tests/gameplay.cjs`: analog yön/hız ve dizi/ritim kuralları.
+`test_joystick_sequence.py`: 360° joystick, iki parmak, bırakma/iptal, arka plan,
+yatay ok dizisi, yanlışta sıfırlama, ritimde tek puan ve Space kontrolü.
 Tarayıcı testleri gerçek telefon veya Android emülatörü testi yerine geçmez.
-`test_final_validation.py`, `test_regression.py` ve `test_phase1a.py` önceki sürümlerden
+`test_mobile.py`, `test_touch_acceptance.py`, `test_final_validation.py`, `test_regression.py` ve `test_phase1a.py` önceki sürümlerden
 kalan tarihsel testlerdir; güncel şarkı seçim akışı için yukarıdaki testleri kullanın.
 
 ## Android emülatörü testi
@@ -82,7 +82,7 @@ Emülatörde uçak modunu açın. Test için ayrı APK oluşturun:
 py -3.12 build_apk.py --debug
 & "$env:ANDROID_SDK_ROOT\platform-tools\adb.exe" -s emulator-5554 install -r MEYDAN-test.apk
 & "$env:ANDROID_SDK_ROOT\platform-tools\adb.exe" -s emulator-5554 shell cmd connectivity airplane-mode enable
-py -3.12 test_touch_acceptance.py --android
+py -3.12 test_joystick_sequence.py --android
 ```
 
 Bu test, Chrome yerine emülatördeki uygulamanın Android WebView'ına bağlanır;

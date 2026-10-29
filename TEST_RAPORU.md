@@ -1,3 +1,32 @@
+# MEYDAN 1.2 — Joystick ve yatay ritim sistemi
+
+29 Ekim 2026. Android versionCode 3, versionName 1.2.
+
+- **Masaüstü Chrome:** W/A/S/D, art arda yön değişimi, fareyle kamera, dans sonrası yürüyüş geçti.
+- **Mobil Chrome benzetimi:** rastgele joystick açısı, merkez uzaklığına göre hız, iki parmak,
+  kamera parmağı/yürüyüş parmağını ayrı kaldırma, pointercancel ve odak temizliği geçti.
+- **Yatay dans:** doğru oklar puan üretmez; yanlış ok bütün diziyi sıfırlar; tamamlanan dizi
+  hedef zamanda RİTİM düğmesine pointerdown veya Space ile onaylanır. Tek onay, bırakma/click
+  ve tekrar basışlarda ikinci kez puanlanmaz. Başarı seviyeyi/dizi uzunluğunu artırır.
+- **Android emülatörü (Android 16, WebView 133, x86_64):** aynı joystick ve dans entegrasyon
+  testleri kurulu test APK'sı üzerinden geçti. Uçak modu, Android Home ve uygulamaya dönüşte
+  joystick/kamera sahipliğinin temizlenmesi doğrulandı.
+- **Kural testleri:** `node tests/gameplay.cjs` ile keyfi açı ve hız, deadzone, dışarı taşma,
+  dizi sırası, yanlışta yeniden deneme, erken/geç onay, yinelenen onay, zorluk ve gecikmiş
+  karede her tur için yalnızca bir Miss doğrulandı.
+- **Gerçek telefon:** bu sürüm fiziksel telefonda denenmedi. Emülatör/mobil tarayıcı sonuçları
+  gerçek cihaz testi olarak sunulmuyor.
+
+Dans modu 8 vuruşluk turlar, 6,5. vuruştaki hedef merkezi ve yatay zaman göstergesi kullanır.
+Puanlama testinde zaman sabitlenerek olayın ilk temasta ve yalnızca bir kez işlendiği sınandı;
+bu bir donanım giriş gecikmesi ölçümü değildir. Kullanılan zaman pencereleri MEYDAN'a aittir;
+Jadde'nin birebir milisaniye toleransları veya puan katsayıları olduğu iddia edilmez.
+Müzik, APK içinde kodla üretilen özgün pop/dance demo ritmidir; ticari Jadde şarkıları eklenmedi.
+
+Aşağıdaki bölüm önceki 1.1 sürümünün tarihsel raporudur.
+
+---
+
 # MEYDAN 1.1 — Test raporu
 
 Tarih: 28 Ekim 2026. Paket: `com.bahri.meydan`, versionCode 2, versionName 1.1.

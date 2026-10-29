@@ -1,7 +1,7 @@
 {
   "id": "meydan_demo",
-  "title": "Meydan Demo",
-  "artist": "MEYDAN",
+  "title": "Meydan Groove",
+  "artist": "MEYDAN · Özgün demo",
   "audio": null,
   "bpm": 96,
   "offsetMs": 0,
@@ -9,60 +9,190 @@
   "difficulties": {
     "easy": {
       "level": 1,
-      "notes": [
-        { "timeMs": 1800, "key": "left" },
-        { "timeMs": 2425, "key": "up" },
-        { "timeMs": 3050, "key": "down" },
-        { "timeMs": 3675, "key": "right" },
-        { "timeMs": 4300, "key": "left" },
-        { "timeMs": 4925, "key": "down" },
-        { "timeMs": 5550, "key": "up" },
-        { "timeMs": 6175, "key": "right" },
-        { "timeMs": 6800, "key": "up" },
-        { "timeMs": 7425, "key": "left" },
-        { "timeMs": 8050, "key": "right" },
-        { "timeMs": 8675, "key": "down" },
-        { "timeMs": 9300, "key": "left" },
-        { "timeMs": 9925, "key": "up" },
-        { "timeMs": 10550, "key": "right" },
-        { "timeMs": 11175, "key": "down" }
+      "baseLength": 2,
+      "patterns": [
+        [
+          "left",
+          "up",
+          "right",
+          "down",
+          "left",
+          "right",
+          "up",
+          "down",
+          "right"
+        ],
+        [
+          "up",
+          "left",
+          "down",
+          "right",
+          "up",
+          "up",
+          "left",
+          "right",
+          "down"
+        ],
+        [
+          "right",
+          "down",
+          "left",
+          "up",
+          "right",
+          "left",
+          "down",
+          "up",
+          "left"
+        ],
+        [
+          "down",
+          "right",
+          "up",
+          "left",
+          "down",
+          "up",
+          "right",
+          "left",
+          "up"
+        ],
+        [
+          "left",
+          "up",
+          "right",
+          "down",
+          "left",
+          "right",
+          "up",
+          "down",
+          "right"
+        ],
+        [
+          "up",
+          "left",
+          "down",
+          "right",
+          "up",
+          "up",
+          "left",
+          "right",
+          "down"
+        ],
+        [
+          "right",
+          "down",
+          "left",
+          "up",
+          "right",
+          "left",
+          "down",
+          "up",
+          "left"
+        ],
+        [
+          "down",
+          "right",
+          "up",
+          "left",
+          "down",
+          "up",
+          "right",
+          "left",
+          "up"
+        ]
       ]
     },
     "hard": {
       "level": 4,
-      "notes": [
-        { "timeMs": 1800, "key": "left" },
-        { "timeMs": 2112, "key": "up" },
-        { "timeMs": 2425, "key": "down" },
-        { "timeMs": 2737, "key": "right" },
-        { "timeMs": 3050, "key": "left" },
-        { "timeMs": 3362, "key": "down" },
-        { "timeMs": 3675, "key": "up" },
-        { "timeMs": 3987, "key": "right" },
-        { "timeMs": 4300, "key": "up" },
-        { "timeMs": 4612, "key": "left" },
-        { "timeMs": 4925, "key": "right" },
-        { "timeMs": 5237, "key": "down" },
-        { "timeMs": 5550, "key": "left" },
-        { "timeMs": 5862, "key": "up" },
-        { "timeMs": 6175, "key": "right" },
-        { "timeMs": 6487, "key": "down" },
-        { "timeMs": 6800, "key": "left" },
-        { "timeMs": 7112, "key": "down" },
-        { "timeMs": 7425, "key": "up" },
-        { "timeMs": 7737, "key": "right" },
-        { "timeMs": 8050, "key": "up" },
-        { "timeMs": 8362, "key": "left" },
-        { "timeMs": 8675, "key": "down" },
-        { "timeMs": 8987, "key": "right" },
-        { "timeMs": 9300, "key": "left" },
-        { "timeMs": 9612, "key": "up" },
-        { "timeMs": 9925, "key": "down" },
-        { "timeMs": 10237, "key": "right" },
-        { "timeMs": 10550, "key": "up" },
-        { "timeMs": 10862, "key": "left" },
-        { "timeMs": 11175, "key": "right" },
-        { "timeMs": 11487, "key": "down" }
+      "baseLength": 4,
+      "patterns": [
+        [
+          "left",
+          "up",
+          "right",
+          "down",
+          "left",
+          "right",
+          "up",
+          "down",
+          "right"
+        ],
+        [
+          "up",
+          "left",
+          "down",
+          "right",
+          "up",
+          "up",
+          "left",
+          "right",
+          "down"
+        ],
+        [
+          "right",
+          "down",
+          "left",
+          "up",
+          "right",
+          "left",
+          "down",
+          "up",
+          "left"
+        ],
+        [
+          "down",
+          "right",
+          "up",
+          "left",
+          "down",
+          "up",
+          "right",
+          "left",
+          "up"
+        ],
+        [
+          "left",
+          "up",
+          "right",
+          "down",
+          "left",
+          "right",
+          "up",
+          "down",
+          "right"
+        ],
+        [
+          "up",
+          "left",
+          "down",
+          "right",
+          "up",
+          "up",
+          "left",
+          "right",
+          "down"
+        ],
+        [
+          "right",
+          "down",
+          "left",
+          "up",
+          "right",
+          "left",
+          "down",
+          "up",
+          "left"
+        ],
+        [
+          "down",
+          "right",
+          "up",
+          "left",
+          "down",
+          "up",
+          "right",
+          "left",
+          "up"
+        ]
       ]
     }
   }

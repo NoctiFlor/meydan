@@ -1,3 +1,4 @@
+import './gameplay.js';
 import * as THREE from 'three';
 import {SoftwareRenderer} from './vendor/SoftwareRenderer.js';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
@@ -68,6 +69,9 @@ cylinder(1.1,1.15,.35,6,.17,5,'#b1a99a');cylinder(.91,.91,.07,6,.37,5,'#60989e')
 const marker=new THREE.Mesh(new THREE.RingGeometry(.27,.33,32),new THREE.MeshBasicMaterial({color:'#f5bd81',side:THREE.DoubleSide,transparent:true,opacity:.8}));marker.rotation.x=-Math.PI/2;marker.position.y=.12;marker.visible=false;scene.add(marker);
 const loader=new GLTFLoader(),mixers=[],npcs=[];let player,mainMixer,actionMap={},activeState='',dance=false,ready=false,goal=null,navPath=[],paused=false,lastRender=0;const keys={},keyboardKeys={},movePointers=new Map(),dancePointers=new Set();let points=0,tourDone=false;const sequence=['ArrowLeft','ArrowUp','ArrowDown','ArrowRight'],arrows=['←','↑','↓','→'];const status=document.getElementById('status');
 const DANCE_STATES={IDLE:'IDLE',COUNTDOWN:'COUNTDOWN',PLAYING:'PLAYING',PAUSED:'PAUSED',RESULTS:'RESULTS'};
+const {analogVector,SequenceDance}=globalThis.MeydanGameplay;
+let phraseEngine=null;
+let joystickPointer=null,joystick={x:0,y:0,strength:0},joystickCenter={x:0,y:0};
 let danceState=DANCE_STATES.IDLE;
 let countdownTimer=null;
 let countdownSec=3;
@@ -80,30 +84,6 @@ let lastKnownSourceTime=0;
 let baseClockOffset=0;
 let currentClockSource='none'; // 'audio' or 'perf'
 let dancePauseTimestamp=0; // Sekme gizlendiğinde duraklatılan sanal saat anı
-
-// Dinamik piksel hizalama parametreleri (getBoundingClientRect)
-let dynamicHitY=52.5;
-let dynamicTravelSpeed=52.5 / 1.8;
-
-function updateDynamicHitMetrics(){
- const rhythmEl=document.querySelector('.rhythm');
- const hitlineEl=document.querySelector('.hitline');
- if(!rhythmEl||!hitlineEl)return;
-
- const rRect=rhythmEl.getBoundingClientRect();
- const hRect=hitlineEl.getBoundingClientRect();
- if(rRect.height===0)return;
-
- // Hitline merkezinin .rhythm üst sınırına göre piksel mesafesi
- const hitCenterFromTop=(hRect.top + hRect.height/2) - rRect.top;
- // Nota yüksekliği 24px (yarı yüksekliği 12px)
- const noteHalfHeight=12;
- // translateY = hitCenterFromTop - noteHalfHeight olduğunda nota merkezi hitline merkeziyle tam çakışır
- dynamicHitY=hitCenterFromTop - noteHalfHeight;
- dynamicTravelSpeed=dynamicHitY / 1.8; // 1.8 saniyede yukarıdan hedef çizgisine varış
-}
-
-window.addEventListener('resize', updateDynamicHitMetrics);
 
 function initAudioContext(){
  if(!audioCtx){
@@ -217,24 +197,11 @@ function validateBeatmap(bm){
   throw new Error('Beatmap en az bir zorluk seviyesi ("difficulties") içermeli!');
  }
  const validKeys=['left','up','down','right'];
- for(let [diffName, diffObj] of Object.entries(bm.difficulties)){
-  if(!diffObj||!Array.isArray(diffObj.notes)){
-   throw new Error(`"${diffName}" zorluğu geçerli bir "notes" dizisi içermeli!`);
-  }
-  let prevTime=-1;
-  for(let n of diffObj.notes){
-   if(typeof n.timeMs!=='number'||n.timeMs<0){
-    throw new Error(`"${diffName}" içinde geçersiz timeMs (${n.timeMs}) tespit edildi! Negatif olamaz.`);
-   }
-   if(!validKeys.includes(n.key)){
-    throw new Error(`"${diffName}" içinde geçersiz nota tuşu: "${n.key}". Yalnızca left/up/down/right olmalıdır.`);
-   }
-   if(n.timeMs < prevTime){
-    throw new Error(`"${diffName}" notaları kronolojik sıralı değil! (${n.timeMs} < ${prevTime})`);
-   }
-   prevTime=n.timeMs;
-  }
+ for(const diff of Object.values(bm.difficulties)){
+  if(!Array.isArray(diff.patterns)||!diff.patterns.length||diff.patterns.some(p=>!Array.isArray(p)||!p.length||p.length>12||p.some(k=>!validKeys.includes(k))))throw new Error('Geçersiz yatay ok dizileri');
+  if(!Number.isInteger(diff.baseLength)||diff.baseLength<1||diff.baseLength>12)throw new Error('Geçersiz başlangıç seviyesi');
  }
+
  return true;
 }
 
@@ -331,7 +298,7 @@ function resetCamera(){
  camera.lookAt(currentFollowTarget);
 }
 const songRegistry=[
- {id:'meydan_demo', title:'Meydan Demo', artist:'MEYDAN', bpm:96}
+ {id:'meydan_demo', title:'Meydan Groove', artist:'MEYDAN · Özgün demo', bpm:96}
 ];
 
 function openSongSelect(){
@@ -377,10 +344,9 @@ async function updateSongDetails(){
  try{
   let bm=await loadBeatmap(currentBeatmapId);
   let diff=bm.difficulties[currentDifficulty]||bm.difficulties[Object.keys(bm.difficulties)[0]];
-  let noteCount=diff?diff.notes.length:0;
-  let lastNoteMs=diff&&diff.notes.length?diff.notes[diff.notes.length-1].timeMs:15000;
-  let durSec=Math.ceil((lastNoteMs+1500)/1000);
-  detailsEl.innerHTML=`<div><b>${bm.title}</b> · ${bm.artist}</div><div>BPM: ${bm.bpm} · Zorluk: ${currentDifficulty.toUpperCase()} · Seviye: ${diff.level||1}</div><div>Nota Sayısı: ${noteCount} · Tahmini Süre: ~${durSec} sn</div>`;
+  const durSec=Math.ceil(diff.patterns.length*8*60/bm.bpm);
+  detailsEl.innerHTML=`<div><b>${bm.title}</b> · ${bm.artist}</div><div>${bm.bpm} BPM · ${currentDifficulty==='easy'?'KOLAY':'ZOR'} · ${diff.patterns.length} tur · ${durSec} sn</div><div>Ok dizisini tamamla → gösterge hedefteyken RİTİM / Space.</div><div>Özgün sentez demo · Pop / dance ritmi</div>`;
+
  }catch(e){
   detailsEl.innerHTML=`<div style="color:#f28b82">Beatmap yüklenemedi: ${e.message}</div>`;
  }
@@ -411,25 +377,20 @@ async function buildChartFromBeatmap(bmId, diffName){
  let bm=await loadBeatmap(bmId);
  let diff=bm.difficulties[diffName];
  if(!diff)throw new Error(`Beatmap'te "${diffName}" zorluğu bulunamadı!`);
- danceGame.count=diff.notes.length;
- danceGame.interval=60 / bm.bpm;
- return diff.notes.map(n=>({
-  dir:keyToDir[n.key],
-  timeSec:(n.timeMs + (bm.offsetMs||0)) / 1000,
-  hit:false,
-  missed:false,
-  el:null
- }));
+ danceGame.count=diff.patterns.length;
+ danceGame.interval=60/bm.bpm;
+ document.getElementById('dance-title').textContent=`DANS TURU · ${bm.bpm} BPM`;
+ return new SequenceDance(bm.bpm,diff.patterns.map(p=>p.map(k=>keyToDir[k])),diff.baseLength,(bm.offsetMs||0)/1000);
 }
 
-let activeChartNotes=[];
+
 
 async function startDanceWithBeatmap(bmId, diffName){
  if(!ready)return;
  initAudioContext();
- updateDynamicHitMetrics();
 
- activeChartNotes=await buildChartFromBeatmap(bmId, diffName);
+
+ phraseEngine=await buildChartFromBeatmap(bmId, diffName);
  startCountdown();
 }
 
@@ -483,15 +444,17 @@ function beginDancePlay(){
   combo:0,
   maxCombo:0,
   roundScore:0,
-  notes:activeChartNotes.map(n=>({...n, hit:false, missed:false, el:null})),
+  notes:[],
   stats:{perfect:0,great:0,good:0,miss:0}
  });
 
- updateDynamicHitMetrics();
+
  document.getElementById('notes').replaceChildren();
  document.getElementById('combo').textContent='COMBO 0';
  status.textContent='RİTİM BAŞLADI!';
- notify('Notalar hedef çizgisine geldiğinde ok tuşuna bas.');
+ notify('Ok dizisini gir; gösterge altın hedefteyken RİTİM / Space!');
+ startSound();
+ renderPhrase(0);
 
  if(soundOn){
   stopSound();
@@ -514,6 +477,9 @@ function finishDance(cancelled=false){
  resetInput();
  document.getElementById('dance').textContent='♫ Dans et';
  document.getElementById('notes').replaceChildren();
+ document.getElementById('phrase-cursor').style.left='0%';
+ document.getElementById('confirm-beat').disabled=true;
+ document.getElementById('phrase-level').textContent=cancelled?'DANS HAZIR · DİZİ + RİTİM':'TUR TAMAMLANDI';
 
  if(soundOn){
   stopSound();
@@ -597,63 +563,52 @@ function judge(kind){
  status.textContent=kind==='perfect'?'PERFECT!':kind==='great'?'GREAT!':kind==='good'?'GOOD':'MISS';
 }
 
-function input(k){
- if(paused||document.hidden||danceState!==DANCE_STATES.PLAYING||!sequence.includes(k))return;
- let dir=sequence.indexOf(k);
- let button=document.querySelectorAll('.key')[dir];
- if(button){
-  button.classList.add('hit');
-  setTimeout(()=>button.classList.remove('hit'),90);
- }
-
- // Puanlama zamanı: AudioContext saatine dayalı
- let elapsedSec=getGameTimeSec()-danceGame.startSec;
-
- // Gecikmiş notaları (delta > 0.350s) tek tek Miss say ve tüket
- while(danceGame.index<danceGame.notes.length){
-  let n=danceGame.notes[danceGame.index];
-  if(elapsedSec - n.timeSec > 0.350){
-   if(!n.hit&&!n.missed){
-    n.missed=true;
-    n.el?.remove();
-    judge('miss');
-   }
-   danceGame.index++;
-  }else{
-   break;
+function danceElapsed(){return getGameTimeSec()-danceGame.startSec}
+function syncDance(time){
+ if(!phraseEngine)return;
+ phraseEngine.update(time);
+ for(const event of phraseEngine.takeResults()){
+  judge(event.kind);
+  if(event.kind!=='miss'&&actionMap.dance){
+   actionMap.dance.reset().setEffectiveTimeScale((60/danceGame.interval)/96).play();
   }
  }
-
- let note=danceGame.notes[danceGame.index];
- if(!note)return;
-
- let timeDiffSec=note.timeSec - elapsedSec; // pozitif = erken, negatif = geç
- let absDiffSec=Math.abs(timeDiffSec);
-
- if(timeDiffSec > 0.350){
-  // 350 ms'den daha erken: notayı tüketmez, yalnızca erken uyarısı
-  danceGame.combo=0;
-  document.getElementById('combo').textContent='COMBO 0';
-  status.textContent='ERKEN!';
-  return;
+ renderPhrase(time);
+}
+function input(k){
+ if(paused||document.hidden||danceState!==DANCE_STATES.PLAYING||!sequence.includes(k))return;
+ const time=danceElapsed();
+ const result=phraseEngine.press(sequence.indexOf(k),time);
+ syncDance(time);
+ if(result==='wrong')status.textContent='Yanlış yön · diziyi baştan gir';
+ else if(result==='complete')status.textContent='Dizi hazır · altın hedefte RİTİM / Space!';
+}
+function confirmDance(){
+ if(paused||document.hidden||danceState!==DANCE_STATES.PLAYING)return;
+ const time=danceElapsed(),result=phraseEngine.confirm(time);
+ syncDance(time);
+ if(result==='incomplete')status.textContent='Önce ok dizisini tamamla';
+}
+let renderedPhrase='';
+function renderPhrase(time){
+ if(!phraseEngine)return;
+ const e=phraseEngine,key=e.index+':'+e.directions.join(',');
+ const row=document.getElementById('notes');
+ if(renderedPhrase!==key||!row.children.length){
+  row.replaceChildren(...e.directions.map(d=>{const node=document.createElement('span');node.className='phrase-arrow';node.textContent=arrows[d];return node}));
+  renderedPhrase=key;
  }
-
- if(note.dir!==dir){
-  // Yanlış yön: combo sıfırlanır, aktif notayı tüketmez
-  danceGame.combo=0;
-  document.getElementById('combo').textContent='COMBO 0';
-  status.textContent='YANLIŞ TUŞ!';
-  return;
- }
-
- // Doğru yön ve ±350 ms aralığında
- if(absDiffSec<=0.120)judge('perfect');
- else if(absDiffSec<=0.220)judge('great');
- else if(absDiffSec<=0.350)judge('good');
-
- note.hit=true;
- note.el?.remove();
- danceGame.index++;
+ [...row.children].forEach((node,i)=>{node.classList.toggle('entered',i<e.position);node.classList.toggle('next',i===e.position&&!e.closed)});
+ const progress=Math.max(0,Math.min(1,(time-e.start)/(8*e.beat)));
+ document.getElementById('phrase-cursor').style.left=(progress*100)+'%';
+ const zone=document.getElementById('confirm-zone');
+ zone.style.left=((6.5*e.beat-e.window)/(8*e.beat)*100)+'%';
+ zone.style.width=(2*e.window/(8*e.beat)*100)+'%';
+ const inTarget=Math.abs(time-e.target)<=e.window;
+ document.getElementById('beat-track').classList.toggle('in-target',inTarget&&!e.closed);
+ document.getElementById('confirm-beat').disabled=e.closed||e.done||time<e.start;
+ document.getElementById('confirm-beat').classList.toggle('armed',e.position===e.directions.length&&!e.closed);
+ document.getElementById('phrase-level').textContent=`SEVİYE ${e.level} · TUR ${Math.min(e.index+1,e.patterns.length)}/${e.patterns.length}`;
 }
 
 function setPause(value){
@@ -677,12 +632,13 @@ window.addEventListener('keydown',e=>{
  if(e.target.matches('input,textarea'))return;
  if(sequence.includes(e.key)||e.key===' ')e.preventDefault();
  if(e.code==='Escape'){e.preventDefault();handleBack();return}
- if(paused)return;
+ if(paused||danceState===DANCE_STATES.PAUSED||danceState===DANCE_STATES.RESULTS||!document.getElementById('songselect').hidden)return;
 
  if(danceState===DANCE_STATES.PLAYING||danceState===DANCE_STATES.COUNTDOWN){
   if(!e.repeat){
    if(e.code==='KeyF')toggleDance();
    if(sequence.includes(e.key))input(e.key);
+   if(e.code==='Space'||e.code==='ControlLeft'||e.code==='ControlRight')confirmDance();
   }
   return; // Dans esnasında WASD hareket tuşları filtrelenir
  }
@@ -708,13 +664,15 @@ function updateTouchMovement(){
  for(const k of ['a','d','w','s'])keys[k]=!!keyboardKeys[k]||held.has(k);
 }
 function resetInput(){
- const captures=[...movePointers.keys(),orbitPointerId].filter(id=>id!==null);
+ const captures=[...movePointers.keys(),orbitPointerId,joystickPointer].filter(id=>id!==null);
+ joystickPointer=null;joystick={x:0,y:0,strength:0};
+ const knob=document.getElementById('joystick-knob');if(knob)knob.style.transform='translate(-50%,-50%)';
  movePointers.clear();dancePointers.clear();
  for(const k of Object.keys(keyboardKeys))keyboardKeys[k]=false;
  for(const k of Object.keys(keys))keys[k]=false;
  isMouseDown=false;orbitPointerId=null;pointerStart=null;
  goal=null;navPath=[];marker.visible=false;
- document.querySelectorAll('[data-move],#gamecanvas').forEach(el=>{
+ document.querySelectorAll('[data-move],#gamecanvas,#joystick').forEach(el=>{
   // Clear state before release, since lostpointercapture can fire synchronously.
   for(const id of captures)if(el.hasPointerCapture(id))el.releasePointerCapture(id);
  });
@@ -733,19 +691,42 @@ function handleBack(){
  setPause(true);
 }
 // Score at contact, never again on compatibility click or pointer release.
-document.querySelectorAll('.key').forEach((button,i)=>{
+function bindPress(button,action){
  button.onpointerdown=e=>{
   if(e.button!==0||dancePointers.has(e.pointerId))return;
-  e.preventDefault();dancePointers.add(e.pointerId);input(sequence[i]);
+  e.preventDefault();dancePointers.add(e.pointerId);action();
  };
  button.onclick=e=>e.preventDefault();
  button.onkeydown=e=>{
   if(e.code==='Space'||e.code==='Enter'){
-   e.preventDefault();e.stopPropagation();if(!e.repeat)input(sequence[i]);
+   e.preventDefault();e.stopPropagation();if(!e.repeat)action();
   }
  };
-});
+}
+document.querySelectorAll('.key').forEach((b,i)=>bindPress(b,()=>input(sequence[i])));
+bindPress(document.getElementById('confirm-beat'),confirmDance);
 for(const event of ['pointerup','pointercancel'])window.addEventListener(event,e=>dancePointers.delete(e.pointerId));
+
+const joystickPad=document.getElementById('joystick');
+function canWalk(){return !paused&&danceState===DANCE_STATES.IDLE&&document.getElementById('songselect').hidden}
+function moveJoystick(e){
+ if(e.pointerId!==joystickPointer)return;
+ const value=analogVector(e.clientX-joystickCenter.x,e.clientY-joystickCenter.y,54);
+ joystick=value;
+ document.getElementById('joystick-knob').style.transform=`translate(calc(-50% + ${value.thumbX}px),calc(-50% + ${value.thumbY}px))`;
+}
+joystickPad.onpointerdown=e=>{
+ if(joystickPointer!==null||!canWalk()||e.button!==0)return;
+ e.preventDefault();
+ const r=joystickPad.getBoundingClientRect();joystickCenter={x:r.x+r.width/2,y:r.y+r.height/2};
+ joystickPointer=e.pointerId;joystickPad.setPointerCapture(e.pointerId);moveJoystick(e);
+};
+joystickPad.onpointermove=moveJoystick;
+joystickPad.onpointerup=joystickPad.onpointercancel=joystickPad.onlostpointercapture=e=>{
+ if(e.pointerId!==joystickPointer)return;
+ joystickPointer=null;joystick={x:0,y:0,strength:0};
+ document.getElementById('joystick-knob').style.transform='translate(-50%,-50%)';
+};
 
 document.querySelectorAll('[data-move]').forEach(b=>{
  b.onpointerdown=e=>{
@@ -801,6 +782,19 @@ function playTick(isDownbeat, audioTime){
  }catch(e){}
 }
 
+function playGroove(beat){
+ playTick(beat%4===0);
+ const bass=[65.41,65.41,87.31,77.78][Math.floor(beat/8)%4];
+ function tone(freq,type,volume,length){
+  const osc=audioCtx.createOscillator(),gain=audioCtx.createGain(),t=audioCtx.currentTime;
+  osc.type=type;osc.frequency.value=freq;gain.gain.setValueAtTime(volume,t);gain.gain.exponentialRampToValueAtTime(.001,t+length);
+  osc.connect(gain);gain.connect(audioCtx.destination);osc.start(t);osc.stop(t+length);
+ }
+ tone(bass,'triangle',.055,.24);
+ if(beat%2===1)tone(180,'square',.018,.07);
+ if(beat%4===0)tone(bass*4,'sine',.025,.4);
+}
+
 function startSound(){
  initAudioContext();
  soundOn=true;
@@ -817,21 +811,23 @@ function toggleSound(){
  else stopSound();
 }
 const map=document.getElementById('minimap'),mapCtx=map.getContext('2d');function drawMap(){mapCtx.fillStyle='#243340';mapCtx.fillRect(0,0,160,140);mapCtx.fillStyle='#a9977f';mapCtx.fillRect(17,8,125,114);mapCtx.fillStyle='#407888';mapCtx.fillRect(17,120,125,12);mapCtx.fillStyle='#6e687b';mapCtx.fillRect(78,20,30,20);mapCtx.fillStyle='#b18d77';mapCtx.fillRect(20,8,35,18);mapCtx.fillStyle='#f4c08c';mapCtx.beginPath();mapCtx.arc(80+player.position.x*4.5,35+player.position.z*5,4,0,Math.PI*2);mapCtx.fill()}
-onresize=()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)};const clock=new THREE.Clock();let oldPosition=new THREE.Vector3();function frame(ms){requestAnimationFrame(frame);let dt=Math.min(clock.getDelta(),.15);if(paused)return;if(player){oldPosition.copy(player.position);let x=(keys.d?1:0)-(keys.a?1:0),z=(keys.s?1:0)-(keys.w?1:0),direction=new THREE.Vector3();if(x||z){goal=null;navPath=[];marker.visible=false;// Use input orbit yaw, never the smoothed/offset or dance camera.
+onresize=()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)};const clock=new THREE.Clock();let oldPosition=new THREE.Vector3();function frame(ms){requestAnimationFrame(frame);let dt=Math.min(clock.getDelta(),.15);if(paused)return;if(player){oldPosition.copy(player.position);let keyboardMoving=keys.w||keys.a||keys.s||keys.d;let x=keyboardMoving?(keys.d?1:0)-(keys.a?1:0):joystick.x,z=keyboardMoving?(keys.s?1:0)-(keys.w?1:0):joystick.y,direction=new THREE.Vector3();if(x||z){goal=null;navPath=[];marker.visible=false;// Use input orbit yaw, never the smoothed/offset or dance camera.
  direction.set(-Math.sin(cameraYaw),0,-Math.cos(cameraYaw));let right=new THREE.Vector3().crossVectors(direction,new THREE.Vector3(0,1,0));direction.multiplyScalar(-z).addScaledVector(right,x).normalize()}else if(goal){direction.subVectors(goal,player.position);direction.y=0;if(direction.length()<.18){goal=navPath.shift()||null;marker.visible=!!goal;direction.set(0,0,0)}else direction.normalize()}
  let isDancingState=(danceState===DANCE_STATES.PLAYING||danceState===DANCE_STATES.COUNTDOWN);
+ document.body.dataset.dancing=String(danceState!==DANCE_STATES.IDLE);
  let moving=!isDancingState&&direction.lengthSq()>.01;
  if(moving){
   dance=false;
   document.getElementById('dance').textContent='♫ Dans et';
-  let speed=keys.shift?3.8:2;
+  let speed=keyboardMoving?(keys.shift?3.8:2):(goal?2:3.8*joystick.strength);
   let nx=player.position.x+direction.x*speed*dt,nz=player.position.z+direction.z*speed*dt;
   if(!blocked(nx,player.position.z))player.position.x=nx;
   if(!blocked(player.position.x,nz))player.position.z=nz;
   let targetAngle=Math.atan2(direction.x,direction.z);
   let angle=THREE.MathUtils.euclideanModulo(targetAngle-player.rotation.y+Math.PI,Math.PI*2)-Math.PI;
-  player.rotation.y+=angle*Math.min(1,dt*10);
-  setState(keys.shift?'run':'walk');
+  player.rotation.y+=angle*(1-Math.exp(-12*dt));
+  setState(speed>2.5?'run':'walk');
+  actionMap[activeState]?.setEffectiveTimeScale(Math.max(.2,speed/(speed>2.5?3.8:2)));
  }else{
   setState(isDancingState?'dance':'idle');
  }
@@ -881,61 +877,16 @@ onresize=()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix
 }
 
 if(danceState===DANCE_STATES.PLAYING){
- let currentSec=getGameTimeSec();
- let elapsedSec=currentSec - danceGame.startSec;
- let lastNoteTime=danceGame.notes.length?danceGame.notes[danceGame.notes.length-1].timeSec:15;
- let totalDurationSec=lastNoteTime + 1.2;
-
- // Sesli metronom vuruşları (AudioContext saatine göre planlanır)
+ const elapsed=danceElapsed();
+ syncDance(elapsed);
+ document.getElementById('timer').textContent=Math.max(0,Math.ceil(phraseEngine.duration-elapsed))+' sn';
+ document.getElementById('songprogress').style.width=Math.min(100,elapsed/phraseEngine.duration*100)+'%';
  if(soundOn&&audioCtx){
-  let lookahead=0.25;
-  for(let i=0;i<danceGame.count;i++){
-   let beatTimeSec=danceGame.notes[i]?danceGame.notes[i].timeSec:(danceGame.startSec + danceGame.lead + i*danceGame.interval);
-   if(beatTimeSec >= currentSec - 0.05 && beatTimeSec <= currentSec + lookahead){
-    if(!scheduledBeats.has(i)){
-     scheduledBeats.add(i);
-     playTick(i%4===0, beatTimeSec);
-    }
-   }
-  }
+  const beatIndex=Math.floor(elapsed/danceGame.interval);
+  if(!scheduledBeats.has(beatIndex)){scheduledBeats.add(beatIndex);playGroove(beatIndex)}
  }
-
- document.getElementById('timer').textContent=Math.max(0,Math.ceil(totalDurationSec - elapsedSec))+' sn';
- document.getElementById('songprogress').style.width=Math.min(100,(elapsedSec/totalDurationSec)*100)+'%';
-
- // Görsel notaların güncellenmesi (dinamik getBoundingClientRect koordinatları)
- for(let i=danceGame.index;i<danceGame.notes.length;i++){
-  let n=danceGame.notes[i];
-  let untilMs=(n.timeSec - elapsedSec)*1000;
-  if(untilMs > 1800)break;
-  if(!n.el && untilMs > -450){
-   n.el=document.createElement('i');
-   n.el.className='note';
-   n.el.textContent=arrows[n.dir];
-   n.el.style.left=(n.dir*25 + 1.5)+'%';
-   document.getElementById('notes').append(n.el);
-  }
-  if(n.el){
-   // Dinamik piksel hedefi (untilMs = 0 iken tam dynamicHitY seviyesinde)
-   let targetY=dynamicHitY - (untilMs/1000) * dynamicTravelSpeed;
-   n.el.style.transform=`translateY(${Math.max(-25, targetY)}px)`;
-  }
- }
-
- // Süresi geçen notaların Miss olarak işlenmesi
- let currentNote=danceGame.notes[danceGame.index];
- if(currentNote && (elapsedSec - currentNote.timeSec > 0.350)){
-  if(!currentNote.hit && !currentNote.missed){
-   currentNote.missed=true;
-   currentNote.el?.remove();
-   judge('miss');
-  }
-  danceGame.index++;
- }
-
- if(elapsedSec >= totalDurationSec){
-  finishDance(false);
- }
+ if(phraseEngine.done)finishDance(false);
 }
+
  for(let m of mixers)m.update(dt);if(!(renderer instanceof SoftwareRenderer)||ms-lastRender>65){renderer.render(scene,camera);lastRender=ms}}
 requestAnimationFrame(frame);boot();

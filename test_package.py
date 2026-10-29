@@ -12,6 +12,9 @@ with zipfile.ZipFile(root / 'MEYDAN.apk') as apk:
     assert len(apk.read('classes.dex')) > 0
     assert len(apk.read('AndroidManifest.xml')) > 0
 text = html.decode('utf-8')
+assert 'globalThis.MeydanGameplay = {analogVector, SequenceDance}' in text
+assert 'id="joystick"' in text and 'id="confirm-beat"' in text
+assert 'id="phrase-cursor"' in text and 'class="lanes"' not in text
 models = json.loads(re.search(r'window.EMBEDDED_ASSETS=(.*?);window.EMBEDDED_BEATMAPS=', text).group(1))
 beatmaps = json.loads(re.search(r'window.EMBEDDED_BEATMAPS=(.*?);</script>', text).group(1))
 for file in (root / 'dist/assets').glob('*.glb'):

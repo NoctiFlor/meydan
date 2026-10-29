@@ -19,6 +19,7 @@ def bundle(name,ns,remap={}):
  s=re.sub(r'import\s+(\{[\s\S]*?\}|\* as \w+)\s+from\s+[\'\"]([^\'\"]+)[\'\"];',imp,s)
  return 'const '+ns+'=(()=>{\n'+s+'\nreturn {'+','.join(a+':'+b for a,b in exports)+'};})();\n'
 js=bundle('three.module.js','THREE')+bundle('BufferGeometryUtils.js','BufferUtils')+bundle('GLTFLoader.js','GLTFTools',{'./BufferGeometryUtils.js':'BufferUtils'})+bundle('OrbitControls.js','OrbitTools')+bundle('SkeletonUtils.js','SkeletonTools')+bundle('SoftwareRenderer.js','SoftTools')
+js+=(dist/'gameplay.js').read_text(encoding='utf-8')+'\n'
 game=(dist/'game.js').read_text(encoding='utf-8');game=re.sub(r'^import .*?;\n','',game,flags=re.M);js+='const {GLTFLoader}=GLTFTools;const {OrbitControls}=OrbitTools;const {clone,retargetClip}=SkeletonTools;const {SoftwareRenderer}=SoftTools;\n'+game
 assets={p.name:base64.b64encode(p.read_bytes()).decode() for p in (dist/'assets').glob('*.glb')}
 beatmaps={p.stem:json.loads(p.read_text(encoding='utf-8')) for p in (dist/'beatmaps').glob('*.json')}

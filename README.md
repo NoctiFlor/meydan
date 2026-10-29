@@ -3,6 +3,17 @@
 Çevrimdışı 3B meydan ve ritim oyunu. Android 8+ için yatay APK ve tarayıcıda
 çalışan bağımsız HTML aynı kaynaklardan üretilir.
 
+1.2 sürümünde dokunmatik hareket 360 derece analog joystick ile yapılır: açı
+hareket yönünü, merkezden uzaklık hızı belirler. İkinci parmak kamerayı çevirir.
+Klavye/fare kontrolleri korunur. Dans; yatay ok dizisini sırayla tamamlama ve
+soldan sağa giden ritim göstergesi hedefteyken Space / RİTİM onayı üzerine kuruludur.
+Yanlış yön diziyi sıfırlar; puan yalnızca ritim onayında verilir. Demo müzik özgün
+bir sentez ritmidir; Jadde'nin ticari müzik kayıtları veya görselleri pakette yoktur.
+
+Oyun kural testleri: `node tests/gameplay.cjs`. Dokunmatik entegrasyon:
+`python test_joystick_sequence.py`; Android emülatöründe aynı betiğe `--android`
+ekleyin (hata ayıklaması açık test APK'sı gerekir).
+
 ## Bilgisayarsız geliştirme
 
 Kaynakları bu özel depoda düzenleyin veya Codespaces / Codex Cloud ortamını bu

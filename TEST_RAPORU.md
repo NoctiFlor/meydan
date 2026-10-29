@@ -26,7 +26,7 @@ Müzik, APK içinde kodla üretilen özgün pop/dance demo ritmidir; ticari Jadd
 Teslim APK'sı ayrıca `test_release_android.py` ile emülatöre temiz kurulup uçak
 modunda açıldı; gerçek Android geri tuşuyla kontroller ve şarkı menüsü kapandı.
 GitHub Actions'ta 1.2 Linux bulut derlemesi ve kural/paket testleri de geçti:
-https://github.com/NoctiFlor/meydan/actions/runs/40896770535
+https://github.com/NoctiFlor/meydan/actions/runs/40897474871
 İndirilen APK'nın sertifikası yerel APK ile aynı; gömülü oyun içeriği eşleşiyor.
 
 Aşağıdaki bölüm önceki 1.1 sürümünün tarihsel raporudur.

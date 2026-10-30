@@ -33,6 +33,12 @@
       const pattern = this.patterns[this.index] || [];
       this.directions = pattern.slice(0, Math.min(pattern.length, this.baseLength + this.level - 1));
     }
+    resetSequence(reason = 'manual') {
+      const from = this.position;
+      this.position = 0;
+      this.lastReset = {reason, from, index:this.index};
+      return from;
+    }
     resolve(kind) {
       if (this.closed || this.done) return;
       this.closed = true;
@@ -51,8 +57,10 @@
     press(direction, time) {
       this.update(time);
       if (this.done || this.closed || time < this.start) return 'inactive';
-      if (this.position === this.directions.length) return 'complete';
-      if (direction !== this.directions[this.position]) { this.position = 0; return 'wrong'; }
+      // Any extra direction after a completed phrase is also a mistake: the
+      // player must enter the whole visible sequence again before confirming.
+      if (this.position === this.directions.length) { this.resetSequence('extra-direction'); return 'wrong'; }
+      if (direction !== this.directions[this.position]) { this.resetSequence('wrong-direction'); return 'wrong'; }
       this.position++;
       return this.position === this.directions.length ? 'complete' : 'correct';
     }

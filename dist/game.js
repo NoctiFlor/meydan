@@ -4,8 +4,19 @@ import {SoftwareRenderer} from './vendor/SoftwareRenderer.js';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
 import { OrbitControls } from './vendor/OrbitControls.js';
 import { clone, retargetClip } from './vendor/SkeletonUtils.js';
+const progressionStore=new globalThis.MeydanProgression.ProgressionStore();
+const savedProgress=progressionStore.load();
+const cosmeticCatalog=[{id:'outfit:classic',category:'outfit',price:0,name:'Meydan Klasiği',starter:true},{id:'effect:gold-ring',category:'effect',price:8,name:'Altın Sahne Halkası'},{id:'effect:mint-ring',category:'effect',price:12,name:'Nane Işık Halkası'},{id:'emote:wave',category:'emote',price:5,name:'Selam Emotesi'}];
+let savedEconomy={};try{savedEconomy=JSON.parse(localStorage.getItem('meydan.economy')||'{}')}catch{}
+savedEconomy.balance=Math.max(Number(savedEconomy.balance)||0,savedProgress.profile.coins);
+const cosmeticEconomy=new globalThis.MeydanEconomy.CosmeticEconomy(cosmeticCatalog,savedEconomy);
+function saveEconomy(){try{localStorage.setItem('meydan.economy',JSON.stringify(cosmeticEconomy.serialize()))}catch{}progressionStore.data.profile.coins=cosmeticEconomy.balance;progressionStore.save()}
+const worldData=globalThis.MeydanWorld.plaza;
+const autoQuality=matchMedia('(pointer:coarse)').matches||((navigator.deviceMemory||8)<=4)?'medium':'high';
+const qualityName=savedProgress.settings.quality==='auto'?autoQuality:savedProgress.settings.quality;
+const worldBudget=globalThis.MeydanWorld.budgetFor(worldData,qualityName);
 const scene=new THREE.Scene();scene.background=new THREE.Color('#9ebdd1');scene.fog=new THREE.FogExp2('#b8c9ce',.012);
-const camera=new THREE.PerspectiveCamera(43,innerWidth/innerHeight,.1,180);let renderer;try{renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'})}catch{renderer=new SoftwareRenderer();document.body.dataset.renderer='software'}renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;document.body.prepend(renderer.domElement);renderer.domElement.id='gamecanvas';
+const camera=new THREE.PerspectiveCamera(43,innerWidth/innerHeight,.1,180);let renderer;try{renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'})}catch{renderer=new SoftwareRenderer();document.body.dataset.renderer='software'}const compactDevice=qualityName!=='high';renderer.setPixelRatio(Math.min(devicePixelRatio,worldBudget.pixelRatio));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;document.body.prepend(renderer.domElement);renderer.domElement.id='gamecanvas';
 let cameraYaw=0,cameraPitch=0.25,cameraDist=6.0;
 let isMouseDown=false,lastMouseX=0,lastMouseY=0;
 let currentFollowPos=new THREE.Vector3(0,2,6);
@@ -44,24 +55,24 @@ dom.addEventListener('lostpointercapture',releaseOrbit);
 dom.addEventListener('wheel',e=>{
  cameraDist=Math.max(2.5,Math.min(14.0,cameraDist+e.deltaY*0.005));
 }, {passive:true});
-scene.add(new THREE.HemisphereLight('#bed9fa','#69534c',2.0));const sun=new THREE.DirectionalLight('#ffd1a4',3.3);sun.position.set(-7,12,6);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-17;sun.shadow.camera.right=17;sun.shadow.camera.top=17;sun.shadow.camera.bottom=-17;sun.shadow.normalBias=.025;scene.add(sun);
-const mats={};function mat(color,roughness=.8,metalness=0){return new THREE.MeshStandardMaterial({color,roughness,metalness})}const gold=mat('#bba17e',.3,.6),dark=mat('#24313d'),wood=mat('#665246'),glass=mat('#293d50',.18,.2);
+scene.add(new THREE.HemisphereLight('#bed9fa','#69534c',2.0));const sun=new THREE.DirectionalLight('#ffd1a4',3.3);sun.position.set(-7,12,6);sun.castShadow=true;sun.shadow.mapSize.set(worldBudget.shadowMap,worldBudget.shadowMap);sun.shadow.camera.left=-17;sun.shadow.camera.right=17;sun.shadow.camera.top=17;sun.shadow.camera.bottom=-17;sun.shadow.normalBias=.025;scene.add(sun);
+const mats={};function mat(color,roughness=.8,metalness=0){const key=`${color}|${roughness}|${metalness}`;return mats[key]||(mats[key]=new THREE.MeshStandardMaterial({color,roughness,metalness}))}const gold=mat('#bba17e',.3,.6),dark=mat('#24313d'),wood=mat('#665246'),glass=mat('#293d50',.18,.2);
 function block(w,h,d,x,y,z,m){let o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),typeof m==='string'?mat(m):m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;scene.add(o);return o}
 function cylinder(rt,rb,h,x,y,z,m,segments=16){let o=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,segments),typeof m==='string'?mat(m):m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;scene.add(o);return o}
 function sign(text,x,y,z,w,color='#f6dfbe',bg='#23323a',h=.42){let c=document.createElement('canvas');c.width=1024;c.height=192;let ct=c.getContext('2d');ct.fillStyle=bg;ct.fillRect(0,0,1024,192);ct.fillStyle=color;ct.font='500 86px Arial';ct.textAlign='center';ct.textBaseline='middle';ct.fillText(text,512,100);const tx=new THREE.CanvasTexture(c);tx.colorSpace=THREE.SRGBColorSpace;let o=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tx}));o.position.set(x,y,z);scene.add(o);return o}
 // A tiled material generated by code; no illustration or background screenshot.
-let tc=document.createElement('canvas');tc.width=1024;tc.height=1024;let ct=tc.getContext('2d');ct.fillStyle='#666c72';ct.fillRect(0,0,1024,1024);for(let y=0;y<8;y++)for(let x=0;x<8;x++){let v=126+((x*37+y*17)%24);ct.fillStyle=`rgb(${v+10},${v+6},${v})`;ct.fillRect(x*128+2,y*128+2,124,124);ct.fillStyle='#ffffff0b';ct.fillRect(x*128+3,y*128+3,122,2)}let floorTex=new THREE.CanvasTexture(tc);floorTex.colorSpace=THREE.SRGBColorSpace;floorTex.wrapS=floorTex.wrapT=THREE.RepeatWrapping;floorTex.repeat.set(6,6);floorTex.anisotropy=renderer.capabilities.getMaxAnisotropy();for(let x=-20;x<=20;x+=2)for(let z=-20;z<=20;z+=2)block(2,.10,2,x,-.08,z,new THREE.MeshStandardMaterial({map:floorTex,color:((x+z)%4)?'#a49f96':'#b3ada2',roughness:.72}));
-const mapBuildings=[];
-function facade(x,z,w,h,color,name){mapBuildings.push({x,z,w,d:2.3,color,name});block(w,h,2.3,x,h/2,z,color);block(w+.16,.18,2.5,x,h+.08,z,'#bcb5a9');block(w,.24,2.5,x,2.9,z,'#d1c5b3');for(let xx=x-w/2+.65;xx<x+w/2;xx+=1.4){for(let yy=3.6;yy<h-.5;yy+=1.65){block(.8,1.14,.07,xx,yy,z+1.19,'#c8bdad');block(.65,1,.08,xx,yy,z+1.24,glass);block(.03,1,.03,xx,yy,z+1.30,gold)}}for(let xx=x-w/2+.7;xx<x+w/2;xx+=1.4){block(1.06,2.30,.08,xx,1.18,z+1.2,glass);block(.05,2.4,.12,xx+.56,1.2,z+1.28,gold);block(.8,1.9,.02,xx,1.15,z+1.26,new THREE.MeshStandardMaterial({color:'#f4bc70',emissive:'#a16a2c',emissiveIntensity:.5,roughness:.3}));block(.045,2.2,.02,xx,1.2,z+1.29,dark)}sign(name,x,2.65,z+1.29,w-.35);}
+let tc=document.createElement('canvas');tc.width=1024;tc.height=1024;let ct=tc.getContext('2d');ct.fillStyle='#666c72';ct.fillRect(0,0,1024,1024);for(let y=0;y<8;y++)for(let x=0;x<8;x++){let v=126+((x*37+y*17)%24);ct.fillStyle=`rgb(${v+10},${v+6},${v})`;ct.fillRect(x*128+2,y*128+2,124,124);ct.fillStyle='#ffffff0b';ct.fillRect(x*128+3,y*128+3,122,2)}let floorTex=new THREE.CanvasTexture(tc);floorTex.colorSpace=THREE.SRGBColorSpace;floorTex.wrapS=floorTex.wrapT=THREE.RepeatWrapping;floorTex.repeat.set(20,20);floorTex.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());const plazaGround=new THREE.Mesh(new THREE.BoxGeometry(42,.10,42),new THREE.MeshStandardMaterial({map:floorTex,color:'#aaa49a',roughness:.76}));plazaGround.position.set(0,-.08,0);plazaGround.receiveShadow=true;scene.add(plazaGround);
+const mapBuildings=[],cameraOccluders=[];
+function facade(x,z,w,h,color,name){mapBuildings.push({x,z,w,d:2.3,color,name});cameraOccluders.push(block(w,h,2.3,x,h/2,z,color));block(w+.16,.18,2.5,x,h+.08,z,'#bcb5a9');block(w,.24,2.5,x,2.9,z,'#d1c5b3');for(let xx=x-w/2+.65;xx<x+w/2;xx+=1.4){for(let yy=3.6;yy<h-.5;yy+=1.65){block(.8,1.14,.07,xx,yy,z+1.19,'#c8bdad');block(.65,1,.08,xx,yy,z+1.24,glass);block(.03,1,.03,xx,yy,z+1.30,gold)}}for(let xx=x-w/2+.7;xx<x+w/2;xx+=1.4){block(1.06,2.30,.08,xx,1.18,z+1.2,glass);block(.05,2.4,.12,xx+.56,1.2,z+1.28,gold);block(.8,1.9,.02,xx,1.15,z+1.26,new THREE.MeshStandardMaterial({color:'#f4bc70',emissive:'#a16a2c',emissiveIntensity:.5,roughness:.3}));block(.045,2.2,.02,xx,1.2,z+1.29,dark)}sign(name,x,2.65,z+1.29,w-.35);}
 facade(-5.9,-6.5,5.6,7.6,'#b99079','SAHİL KAFE');facade(-.1,-7.1,5.5,9,'#b6b3a4','MODA ATÖLYESİ');facade(5.55,-6.5,5.5,7.8,'#787287','CLUB  •  LİMAN');
 // Cafe canopy, outdoor tables and string lights.
 let canopy=block(5.7,.12,1.6,-5.9,2.45,-4.45,'#644e49');canopy.rotation.x=.12;for(let i=0;i<9;i++)block(.30,.07,1.61,-8.55+i*.65,2.51,-4.45,'#d4bda0');
 function table(x,z){cylinder(.52,.52,.07,x,.8,z,wood);cylinder(.055,.10,.8,x,.4,z,dark);cylinder(.28,.33,.05,x,.04,z,dark);for(let side of[-1,1]){let xx=x+side*.75;cylinder(.25,.25,.08,xx,.44,z,wood);for(let dz of[-.15,.15])block(.035,.44,.035,xx,.22,z+dz,dark);block(.05,.65,.40,xx+side*.23,.70,z,wood)}cylinder(.06,.08,.14,x,.91,z,'#d6c0a1');let stem=cylinder(.013,.013,.21,x,1.04,z,'#47634b');}
 table(-5.5,-2.1);table(-7.1,-3.3);table(-3.9,-3.25);
-function lamp(x,z){cylinder(.075,.14,3.25,x,1.625,z,dark);block(.38,.45,.38,x,3.35,z,new THREE.MeshStandardMaterial({color:'#ffe1a2',emissive:'#ffc773',emissiveIntensity:2}));block(.5,.08,.5,x,3.62,z,dark);let light=new THREE.PointLight('#ffc67e',18,8,2);light.position.set(x,3.2,z);scene.add(light)}lamp(-3.2,-.5);lamp(6,-1.8);lamp(-8.8,-3.8);
+const lampGlow=new THREE.MeshStandardMaterial({color:'#ffe1a2',emissive:'#ffc773',emissiveIntensity:2});function lamp(x,z,castsLight=false){cylinder(.075,.14,3.25,x,1.625,z,dark);block(.38,.45,.38,x,3.35,z,lampGlow);block(.5,.08,.5,x,3.62,z,dark);if(castsLight){let light=new THREE.PointLight('#ffc67e',18,8,2);light.position.set(x,3.2,z);scene.add(light)}}lamp(-3.2,-.5,true);lamp(6,-1.8,true);lamp(-8.8,-3.8,true);
 function planter(x,z){block(1,.45,1,x,.23,z,'#766f69');for(let i=0;i<7;i++){let a=i*2.4;let o=new THREE.Mesh(new THREE.SphereGeometry(.42,8,8),mat(i%2?'#62715a':'#79836a'));o.position.set(x+Math.sin(a)*.27,.6+Math.cos(a)*.08,z+Math.cos(a)*.26);o.scale.y=.9;o.castShadow=true;scene.add(o)}}planter(-2.5,-4.6);planter(2.7,-4.5);planter(7.7,-2.4);
-// Raised dance floor, neon portal and club lights.
-block(5,.09,3.1,1.5,.025,-1.5,'#474b59');for(let i=0;i<8;i++)for(let j=0;j<5;j++){let m=mat((i+j)%3?'#5c6772':'#b28c9e',.35,.1);block(.59,.012,.58,-.6+i*.62,.079,-2.7+j*.62,m)}const pink=new THREE.MeshStandardMaterial({color:'#f0a7d2',emissive:'#ff4aa1',emissiveIntensity:2.3});block(4.6,.055,.07,5.5,3,-5.28,pink);block(.055,2.8,.07,3.23,1.6,-5.28,pink);block(.055,2.8,.07,7.77,1.6,-5.28,pink);const pinkLight=new THREE.PointLight('#e37ab1',22,10,2);pinkLight.position.set(5,2,-3);scene.add(pinkLight);
+// Circular central dance stage: one readable landmark instead of dozens of floor tiles.
+cylinder(2.65,2.65,.12,1.5,.02,-1.5,'#474b59',48);const stageDisc=new THREE.Mesh(new THREE.CircleGeometry(2.48,48),new THREE.MeshStandardMaterial({color:'#665d74',roughness:.35,metalness:.12}));stageDisc.rotation.x=-Math.PI/2;stageDisc.position.set(1.5,.09,-1.5);stageDisc.receiveShadow=true;scene.add(stageDisc);const stageRing=new THREE.Mesh(new THREE.RingGeometry(2.28,2.48,48),new THREE.MeshStandardMaterial({color:'#f0a7d2',emissive:'#ff4aa1',emissiveIntensity:1.8,side:THREE.DoubleSide}));stageRing.rotation.x=-Math.PI/2;stageRing.position.set(1.5,.105,-1.5);scene.add(stageRing);const pink=new THREE.MeshStandardMaterial({color:'#f0a7d2',emissive:'#ff4aa1',emissiveIntensity:2.3});block(4.6,.055,.07,5.5,3,-5.28,pink);block(.055,2.8,.07,3.23,1.6,-5.28,pink);block(.055,2.8,.07,7.77,1.6,-5.28,pink);const pinkLight=new THREE.PointLight('#e37ab1',compactDevice?12:18,9,2);pinkLight.position.set(5,2,-3);scene.add(pinkLight);
 // Promenade and places to explore.
 const obstacles=[[-8.9,-3.0,-8,-5.05],[-2.85,2.65,-9,-5.55],[2.8,8.4,-8,-5.05],[-6.6,-4.4,-3.1,-1.1],[-8.1,-6.1,-4.3,-2.3],[-4.9,-2.9,-4.25,-2.25],[-2.98,-2.02,-5.1,-4.1],[2.2,3.2,-5,-4],[7.2,8.2,-2.9,-1.9]];
 block(42,.12,5,0,-.04,14,'#bbad96');const water=block(65,.06,35,0,-.2,35,new THREE.MeshStandardMaterial({color:'#487b91',roughness:.2,metalness:.25}));for(let x=-18;x<=18;x+=2){cylinder(.045,.045,1,x,.5,16.1,gold);if(x<18)block(2,.045,.045,x+1,.95,16.1,gold)}
@@ -69,7 +80,7 @@ for(let x of[-8,-3,3,8]){block(1.8,.1,.55,x,.47,10,wood);block(1.8,.45,.08,x,.73
 for(let x of[-10,10])for(let z of[3,8,13]){lamp(x,z);planter(x-.8,z+.7)}
 cylinder(1.1,1.15,.35,6,.17,5,'#b1a99a');cylinder(.91,.91,.07,6,.37,5,'#60989e');cylinder(.19,.27,1.0,6,.85,5,'#beb5a0');cylinder(.7,.4,.12,6,1.35,5,'#b1a99a');obstacles.push([4.7,7.3,3.7,6.3]);
 const marker=new THREE.Mesh(new THREE.RingGeometry(.27,.33,32),new THREE.MeshBasicMaterial({color:'#f5bd81',side:THREE.DoubleSide,transparent:true,opacity:.8}));marker.rotation.x=-Math.PI/2;marker.position.y=.12;marker.visible=false;scene.add(marker);
-const loader=new GLTFLoader(),mixers=[],npcs=[];let player,mainMixer,actionMap={},activeState='',dance=false,ready=false,goal=null,navPath=[],paused=false,lastRender=0;const keys={},keyboardKeys={},movePointers=new Map(),dancePointers=new Set();let points=0,tourDone=false;const sequence=['ArrowLeft','ArrowUp','ArrowDown','ArrowRight'],arrows=['←','↑','↓','→'];const status=document.getElementById('status');
+const loader=new GLTFLoader(),mixers=[],npcs=[],npcActors=[];const npcNames=['Ece','Deniz','Mert','Selin','Arda','Lina','Emir','Duru'];const socialDefinitions=worldData.npcSpawns.slice(0,worldBudget.maxNpc).map((spawn,index)=>({...spawn,name:npcNames[index%npcNames.length]}));const socialWorld=new globalThis.MeydanSocial.SocialWorld(20261030,socialDefinitions);const activityInstances=[globalThis.MeydanActivities.createActivity('cafe-sit',{x:-5.5,z:-2.1}),globalThis.MeydanActivities.createActivity('fountain-photo',{x:6,z:5}),globalThis.MeydanActivities.createActivity('shore-bench',{x:3,z:10})];let activityClock=0;let player,mainMixer,actionMap={},activeState='',dance=false,ready=false,goal=null,navPath=[],paused=false,lastRender=0;const keys={},keyboardKeys={},movePointers=new Map(),dancePointers=new Set();let points=savedProgress.stats.totalScore,tourDone=false;const sequence=['ArrowLeft','ArrowUp','ArrowDown','ArrowRight'],arrows=['←','↑','↓','→'];const status=document.getElementById('status');
 const DANCE_STATES={IDLE:'IDLE',COUNTDOWN:'COUNTDOWN',PLAYING:'PLAYING',PAUSED:'PAUSED',RESULTS:'RESULTS'};
 const {analogVector,SequenceDance}=globalThis.MeydanGameplay;
 let phraseEngine=null;
@@ -252,6 +263,7 @@ const danceGame={
 function notify(text){document.getElementById('toast').textContent=text;document.getElementById('toast').classList.add('show');clearTimeout(notify.timer);notify.timer=setTimeout(()=>document.getElementById('toast').classList.remove('show'),3500)}
 function loadGLB(name){return new Promise((resolve,reject)=>{const bytes=window.EMBEDDED_ASSETS?.[name];if(bytes){const bin=Uint8Array.from(atob(bytes),c=>c.charCodeAt(0));loader.parse(bin.buffer,'',resolve,reject)}else loader.load('./assets/'+name,resolve,undefined,reject)})}
 function attachSkeleton(root){root.traverse(o=>{if(o.isSkinnedMesh&&!root.skeleton)root.skeleton=o.skeleton});root.updateMatrixWorld(true);return root}
+function makeNpcLabel(name){const canvas=document.createElement('canvas');canvas.width=256;canvas.height=64;const ctx=canvas.getContext('2d');ctx.fillStyle='#172128cc';ctx.fillRect(4,7,248,50);ctx.strokeStyle='#d4b47dcc';ctx.lineWidth=2;ctx.strokeRect(4,7,248,50);ctx.fillStyle='#fff7e8';ctx.font='600 25px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(name,128,32);const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false}));sprite.position.set(0,2.15,0);sprite.scale.set(1.45,.36,1);sprite.renderOrder=4;return sprite}
 async function boot(){try{
  document.getElementById('loadtext').textContent='Karakter ve yürüyüş animasyonları hazırlanıyor…';const [g,donor]=await Promise.all([loadGLB('Michelle.glb'),loadGLB('Xbot.glb')]);
  let converted={};
@@ -271,9 +283,26 @@ async function boot(){try{
  }
  for(let name of ['idle','walk','run'])converted[name]=convertMotion(name);
  let source=g.scene;source.updateMatrixWorld(true);let b=new THREE.Box3().setFromObject(source),size=b.getSize(new THREE.Vector3());source.scale.multiplyScalar(1.78/size.y);source.updateMatrixWorld(true);b.setFromObject(source);source.position.y-=b.min.y;source.updateMatrixWorld(true);
- function spawn(x,z,offset,isMain=false){let root=new THREE.Group(),model=clone(source);root.add(model);root.position.set(x,.10,z);model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=false}});scene.add(root);let mx=new THREE.AnimationMixer(model);mixers.push(mx);if(isMain){mainMixer=mx;for(let [name,clip]of Object.entries(converted))actionMap[name]=mx.clipAction(clip);actionMap.dance=mx.clipAction(g.animations.find(c=>c.name==='SambaDance'));player=root;setState('idle')}else{mx.clipAction(g.animations.find(c=>c.name==='SambaDance')).play();mx.setTime(offset);npcs.push(root)}return root}
- spawn(-.5,1.1,0,true);spawn(1.4,-1.1,1.1);spawn(3,-1.8,2.8);ready=true;resetCamera();document.getElementById('loading').remove();document.body.dataset.ready='true';notify(matchMedia('(pointer:coarse)').matches?'Hazır · joystick ile meydanı keşfet':'Hazır · WASD ile yürü, Shift ile koş');console.log('READY: embedded model, idle/walk/run/dance, collisions, follow camera');
+ function spawn(x,z,offset,isMain=false,socialId=null,socialName=''){let root=new THREE.Group(),model=clone(source);root.add(model);root.position.set(x,.10,z);model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=isMain?false:true}});scene.add(root);let mx=new THREE.AnimationMixer(model);mixers.push(mx);if(isMain){mainMixer=mx;for(let [name,clip]of Object.entries(converted))actionMap[name]=mx.clipAction(clip);actionMap.dance=mx.clipAction(g.animations.find(c=>c.name==='SambaDance'));player=root;setState('idle')}else{const profile=globalThis.MeydanMotion.avatarProfile(socialId);root.scale.setScalar(profile.scale);root.userData.avatarProfile=profile;root.add(makeNpcLabel(socialName));const actions={idle:mx.clipAction(converted.idle),walk:mx.clipAction(converted.walk),dance:mx.clipAction(g.animations.find(c=>c.name==='SambaDance'))};actions.idle.play();mx.setTime(profile.animationOffset);root.userData.socialId=socialId;npcs.push(root);npcActors.push({root,mixer:mx,actions,state:'idle'})}return root}
+ spawn(-.5,1.1,0,true);socialDefinitions.forEach((definition,index)=>spawn(definition.x,definition.z,index*.73,false,definition.id,definition.name));ready=true;resetCamera();updateScore();updateProfileHud();applyCosmetics();document.getElementById('loading').remove();document.body.dataset.ready='true';notify(matchMedia('(pointer:coarse)').matches?'Hazır · joystick ile meydanı keşfet':'Hazır · WASD ile yürü, Shift ile koş');console.log('READY: embedded model, progression, social NPCs, three songs, collisions, follow camera');
 }catch(e){window.showBootError('Oyun başlatılamadı: '+e.message);console.error(e)}}
+function updateSocialActors(dt){
+ if(!player||!npcActors.length)return;
+ socialWorld.update(dt,player.position);
+ const snapshots=new Map(socialWorld.snapshot().map(item=>[item.id,item]));
+ for(const actor of npcActors){
+  const state=snapshots.get(actor.root.userData.socialId);if(!state)continue;
+  const dx=state.x-actor.root.position.x,dz=state.z-actor.root.position.z;
+  actor.root.position.set(state.x,.1,state.z);
+  if(Math.hypot(dx,dz)>.001)actor.root.rotation.y=Math.atan2(dx,dz);
+  const visual=state.state==='dance'?'dance':state.state==='wander'?'walk':'idle';
+  if(actor.state!==visual){actor.actions[actor.state]?.fadeOut(.18);actor.actions[visual].reset().fadeIn(.18).play();actor.state=visual}
+ }
+}
+function updateActivities(dt){
+ activityClock+=dt;if(!player)return;
+ for(const activity of activityInstances){const result=globalThis.MeydanActivities.update(activity,activityClock,{player:player.position});if(!result.changed||result.state!==globalThis.MeydanActivities.STATES.COMPLETED)continue;const reward=result.reward||{};if(reward.coins)cosmeticEconomy.grantCoins(reward.coins);progressionStore.data.profile.xp+=reward.xp||0;progressionStore.data.profile.level=1+Math.floor(progressionStore.data.profile.xp/100);saveEconomy();updateProfileHud();notify(`Aktivite tamamlandı · +${reward.coins||0} ◇`) }
+}
 function setState(name){if(activeState===name||!actionMap[name])return;let previous=actionMap[activeState];actionMap[name].reset().setEffectiveTimeScale(1).setEffectiveWeight(1).fadeIn(.18).play();if(previous)previous.fadeOut(.18);activeState=name;document.getElementById('motion').textContent=({idle:'Bekliyor',walk:'Yürüyor',run:'Koşuyor',dance:'Dans ediyor'})[name];document.body.dataset.motion=name}
 function blocked(x,z){return x< -12||x>12||z< -4.7||z>15.5||obstacles.some(a=>x>a[0]-.25&&x<a[1]+.25&&z>a[2]-.25&&z<a[3]+.25)}
 function findPath(dest){
@@ -301,8 +330,14 @@ function resetCamera(){
  camera.lookAt(currentFollowTarget);
 }
 const songRegistry=[
- {id:'meydan_demo', title:'Meydan Groove', artist:'MEYDAN · Özgün demo', bpm:96}
+ {id:'meydan_demo', title:'Meydan Groove', artist:'MEYDAN · Özgün demo', bpm:96},
+ {id:'gece_isiklari', title:'Gece Işıkları', artist:'MEYDAN · Özgün sentez', bpm:112},
+ {id:'sahil_ritmi', title:'Sahil Ritmi', artist:'MEYDAN · Özgün sentez', bpm:124}
 ];
+function applyCosmetics(){if(!player)return;const previous=player.getObjectByName('equipped-effect');if(previous)player.remove(previous);const id=cosmeticEconomy.equipped.effect;if(!id)return;const color=id==='effect:mint-ring'?'#63c6a3':'#d4b47d';const ring=new THREE.Mesh(new THREE.RingGeometry(.48,.59,32),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.75,side:THREE.DoubleSide}));ring.name='equipped-effect';ring.rotation.x=-Math.PI/2;ring.position.y=.025;player.add(ring)}
+function renderShop(){const grid=document.getElementById('shop-grid');grid.replaceChildren();document.getElementById('shop-balance').textContent=`${cosmeticEconomy.balance} ◇`;for(const item of cosmeticEconomy.getCatalog()){const card=document.createElement('div');card.className='shop-item';const title=document.createElement('b');title.textContent=item.name;const meta=document.createElement('span');meta.textContent=item.owned?(item.equipped?'Kuşanıldı':'Sahipsin'):`${item.price} ◇`;const button=document.createElement('button');button.textContent=item.owned?(item.equipped?'Çıkar':'Kuşan'):'Satın al';button.onclick=()=>{const result=item.owned?(item.equipped?(cosmeticEconomy.unequip(item.category),{ok:true}):cosmeticEconomy.equip(item.id)):cosmeticEconomy.purchase(item.id);if(!result.ok){notify(result.reason==='insufficient_balance'?'Yeterli ◇ yok':'İşlem yapılamadı');return}saveEconomy();applyCosmetics();updateProfileHud();renderShop()};card.append(title,meta,button);grid.append(card)}}
+function openShop(){resetInput();renderShop();document.getElementById('shop').hidden=false}
+function closeShop(){document.getElementById('shop').hidden=true}
 
 function openSongSelect(){
  resetInput();
@@ -365,6 +400,7 @@ document.querySelectorAll('.diff-btn').forEach(btn=>{
 });
 
 document.getElementById('song-cancel').onclick=closeSongSelect;
+document.getElementById('shop-close').onclick=closeShop;
 document.getElementById('song-start').onclick=async ()=>{
  closeSongSelect();
  try{
@@ -504,6 +540,11 @@ function finishDance(cancelled=false){
  updateScore();
  let accuracy=(danceGame.stats.perfect+danceGame.stats.great*0.8+danceGame.stats.good*0.5)/danceGame.count;
  let grade=accuracy>0.93?'S':accuracy>0.82?'A':accuracy>0.68?'B':accuracy>0.5?'C':'D';
+ progressionStore.recordScore(currentBeatmapId,currentDifficulty,{score:danceGame.roundScore,accuracy,combo:danceGame.maxCombo,grade});
+ cosmeticEconomy.grantCoins(Math.max(1,Math.floor(danceGame.roundScore/5000)));saveEconomy();
+ if(savedProgress.stats.plays===0)progressionStore.unlock('song:gece_isiklari');
+ if(progressionStore.data.stats.plays>=2)progressionStore.unlock('song:sahil_ritmi');
+ updateProfileHud();
  let gradeEl=document.getElementById('grade');
  if(gradeEl)gradeEl.textContent=grade;
  let resScoreEl=document.getElementById('resultscore');
@@ -536,7 +577,13 @@ function toggleDance(){
 
 function interact(){
  if(!player)return;
- if(player.position.z>8){
+ if(Math.hypot(player.position.x+.1,player.position.z+5.55)<2.2){openShop();return}
+ const nearby=socialWorld.nearest(player.position,2.4);
+ if(nearby){
+  const event=socialWorld.interact(player.position,nearby.npc.id);
+  notify(`${nearby.npc.name}: ${event.text||'Selam!'}`);
+  if(event.activity==='dance'&&danceState===DANCE_STATES.IDLE)openSongSelect();
+ }else {const activity=activityInstances.find(item=>Math.hypot(player.position.x-item.location.x,player.position.z-item.location.z)<=item.definition.radius);if(activity){const started=globalThis.MeydanActivities.start(activity,{id:'player',position:player.position},activityClock);if(started.ok){notify(activity.id==='fountain-photo'?'Çeşme fotoğrafı çekiliyor…':activity.id==='cafe-sit'?'Kafede dinleniyorsun…':'Sahil bankında dinleniyorsun…');return}}if(player.position.z>8){
   notify('Sahil yürüyüşüne hoş geldin.');
  }else if(player.position.x< -2&&player.position.z<1.5){
   if(!tourDone){
@@ -550,13 +597,15 @@ function interact(){
   if(danceState===DANCE_STATES.IDLE)toggleDance();
   notify('Dans pistindesin. Ok dizisini tamamla.');
  }else{
-  notify('Keşfet: kafe solda, dans pisti ileride, sahil arkanda.');
- }
+  notify('Keşfet: insanlarla konuş, kafeye uğra veya dans pistine geç.');
+ }}
 }
 
 function updateScore(){
  document.getElementById('score').textContent=points.toLocaleString('tr-TR');
 }
+function updateProfileHud(){const data=progressionStore.snapshot();document.getElementById('profile-chip').textContent=`SV ${data.profile.level} · ${data.profile.coins} ◇`}
+function updateSettingsPanel(){const data=progressionStore.snapshot();const summary=document.getElementById('profile-summary');if(summary)summary.textContent=`${data.profile.name} · Seviye ${data.profile.level} · ${data.profile.xp} XP · ${data.profile.coins} ◇`;document.querySelectorAll('[data-quality]').forEach(button=>button.classList.toggle('active',button.dataset.quality===data.settings.quality))}
 
 function judge(kind){
  let values={perfect:1000,great:650,good:350,miss:0};
@@ -628,6 +677,7 @@ function setPause(value){
  resetInput();
  if(value&&(danceState===DANCE_STATES.PLAYING||danceState===DANCE_STATES.COUNTDOWN)){pauseDanceTur();return}
  paused=value;
+ if(paused)updateSettingsPanel();
  document.getElementById('pausemenu').hidden=!paused;
 }
 
@@ -673,6 +723,8 @@ document.getElementById('resume').onclick=()=>setPause(false);
 document.getElementById('help').onclick=()=>setPause(true);
 document.getElementById('sound').onclick=toggleSound;
 document.querySelectorAll('[data-setting]').forEach(button=>button.onclick=()=>document.getElementById(button.dataset.setting).click());
+document.querySelectorAll('[data-quality]').forEach(button=>button.onclick=()=>{progressionStore.updateSettings({quality:button.dataset.quality});updateSettingsPanel();notify('Grafik kalitesi kaydedildi · sonraki açılışta uygulanacak')});
+document.getElementById('reset-progress').onclick=()=>{if(!confirm('Tüm yerel skorlar, kozmetikler ve ilerleme silinsin mi?'))return;progressionStore.reset();cosmeticEconomy.balance=0;cosmeticEconomy.owned=new Set(cosmeticEconomy.catalog.filter(item=>item.starter).map(item=>item.id));cosmeticEconomy.equipped={};try{localStorage.removeItem('meydan.economy')}catch{}points=0;applyCosmetics();updateScore();updateProfileHud();updateSettingsPanel();notify('Yerel ilerleme sıfırlandı')};
 document.getElementById('again').onclick=()=>{startDance();document.activeElement.blur()};
 document.getElementById('closeresult').onclick=()=>{closeResultScreen();document.activeElement.blur()};
 
@@ -733,6 +785,7 @@ function handleBack(){
  resetInput();
  if(!document.getElementById('dancepause').hidden){quitDanceFromPause();return}
  if(!document.getElementById('songselect').hidden){closeSongSelect();return}
+ if(!document.getElementById('shop').hidden){closeShop();return}
  if(!document.getElementById('result').hidden){closeResultScreen();return}
  if(!document.getElementById('pausemenu').hidden){setPause(false);return}
  if(dockOpen){setDancePanel(false);return}
@@ -757,7 +810,7 @@ bindPress(document.getElementById('confirm-beat'),()=>{if(danceState===DANCE_STA
 for(const event of ['pointerup','pointercancel'])window.addEventListener(event,e=>dancePointers.delete(e.pointerId));
 
 const joystickPad=document.getElementById('joystick');
-function canWalk(){return !paused&&danceState===DANCE_STATES.IDLE&&document.getElementById('songselect').hidden}
+function canWalk(){return !paused&&danceState===DANCE_STATES.IDLE&&document.getElementById('songselect').hidden&&document.getElementById('shop').hidden}
 function moveJoystick(e){
  if(e.pointerId!==joystickPointer)return;
  const value=analogVector(e.clientX-joystickCenter.x,e.clientY-joystickCenter.y,joystickCenter.radius);
@@ -832,16 +885,20 @@ function playTick(isDownbeat, audioTime){
 }
 
 function playGroove(beat){
- playTick(beat%4===0);
- const bass=[65.41,65.41,87.31,77.78][Math.floor(beat/8)%4];
- function tone(freq,type,volume,length){
-  const osc=audioCtx.createOscillator(),gain=audioCtx.createGain(),t=audioCtx.currentTime;
+ const events=globalThis.MeydanMusic.generateBeat(currentBeatmapId,beat),beatDuration=danceGame.interval;
+ function tone(freq,type,volume,length,offset=0){
+  const osc=audioCtx.createOscillator(),gain=audioCtx.createGain(),t=audioCtx.currentTime+offset*beatDuration;
   osc.type=type;osc.frequency.value=freq;gain.gain.setValueAtTime(volume,t);gain.gain.exponentialRampToValueAtTime(.001,t+length);
   osc.connect(gain);gain.connect(audioCtx.destination);osc.start(t);osc.stop(t+length);
  }
- tone(bass,'triangle',.055,.24);
- if(beat%2===1)tone(180,'square',.018,.07);
- if(beat%4===0)tone(bass*4,'sine',.025,.4);
+ for(const event of events){
+  const offset=event.offsetBeats||0;
+  if(event.kind==='kick')tone(62,'sine',.075,.16,offset);
+  else if(event.kind==='snare')tone(190,'square',.018,.08,offset);
+  else if(event.kind==='hat')tone(760,'square',.008,.035,offset);
+  else if(event.kind==='bass')tone(440*Math.pow(2,(event.midi-69)/12),event.wave,.05,event.durationBeats*beatDuration,offset);
+  else if(event.kind==='chord')for(const midi of event.midi)tone(440*Math.pow(2,(midi-69)/12),'sine',.009,event.durationBeats*beatDuration,offset);
+ }
 }
 
 function startSound(){
@@ -858,6 +915,7 @@ function stopSound(){
 function toggleSound(){
  if(!soundOn)startSound();
  else stopSound();
+ progressionStore.updateSettings({sound:soundOn});
 }
 // Bake the actual scene's ground plan once; no unrelated decorative rectangles.
 const map=document.getElementById('minimap'),mapCtx=map.getContext('2d');
@@ -907,7 +965,7 @@ function drawMap(){
  map.dataset.playerX=player.position.x.toFixed(2);map.dataset.playerZ=player.position.z.toFixed(2);map.dataset.heading=player.rotation.y.toFixed(3);
 }
 
-onresize=()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)};const clock=new THREE.Clock();let oldPosition=new THREE.Vector3();function frame(ms){requestAnimationFrame(frame);let dt=Math.min(clock.getDelta(),.15);if(paused)return;if(player){oldPosition.copy(player.position);let keyboardMoving=keys.w||keys.a||keys.s||keys.d;let x=keyboardMoving?(keys.d?1:0)-(keys.a?1:0):joystick.x,z=keyboardMoving?(keys.s?1:0)-(keys.w?1:0):joystick.y,direction=new THREE.Vector3();if(x||z){goal=null;navPath=[];marker.visible=false;// Use input orbit yaw, never the smoothed/offset or dance camera.
+onresize=()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)};const clock=new THREE.Clock(),cameraRay=new THREE.Raycaster();let oldPosition=new THREE.Vector3();function frame(ms){requestAnimationFrame(frame);let dt=Math.min(clock.getDelta(),.15);if(paused)return;if(player){oldPosition.copy(player.position);let keyboardMoving=keys.w||keys.a||keys.s||keys.d;let x=keyboardMoving?(keys.d?1:0)-(keys.a?1:0):joystick.x,z=keyboardMoving?(keys.s?1:0)-(keys.w?1:0):joystick.y,direction=new THREE.Vector3();if(x||z){goal=null;navPath=[];marker.visible=false;// Use input orbit yaw, never the smoothed/offset or dance camera.
  direction.set(-Math.sin(cameraYaw),0,-Math.cos(cameraYaw));let right=new THREE.Vector3().crossVectors(direction,new THREE.Vector3(0,1,0));direction.multiplyScalar(-z).addScaledVector(right,x).normalize()}else if(goal){direction.subVectors(goal,player.position);direction.y=0;if(direction.length()<.18){goal=navPath.shift()||null;marker.visible=!!goal;direction.set(0,0,0)}else direction.normalize()}
  let isDancingState=(danceState===DANCE_STATES.PLAYING||danceState===DANCE_STATES.COUNTDOWN);
  document.body.dataset.dancing=String(danceState!==DANCE_STATES.IDLE);
@@ -921,13 +979,14 @@ onresize=()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix
   if(!blocked(nx,player.position.z))player.position.x=nx;
   if(!blocked(player.position.x,nz))player.position.z=nz;
   let targetAngle=Math.atan2(direction.x,direction.z);
-  let angle=THREE.MathUtils.euclideanModulo(targetAngle-player.rotation.y+Math.PI,Math.PI*2)-Math.PI;
-  player.rotation.y+=angle*(1-Math.exp(-12*dt));
+  player.rotation.y=globalThis.MeydanMotion.dampAngle(player.rotation.y,targetAngle,12,dt);
   setState(speed>2.5?'run':'walk');
   actionMap[activeState]?.setEffectiveTimeScale(Math.max(.2,speed/(speed>2.5?3.8:2)));
  }else{
   setState(isDancingState?'dance':'idle');
  }
+ updateSocialActors(dt);
+ updateActivities(dt);
 
  // --- Takip ve Sahne Kamerası Güncellemesi ---
  // Follow translation only. Rotating toward the player here would feed
@@ -943,6 +1002,9 @@ onresize=()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix
    .addScaledVector(backwardVec, -cameraDist*Math.cos(cameraPitch))
    .addScaledVector(new THREE.Vector3(0,1,0), cameraDist*Math.sin(cameraPitch))
    .addScaledVector(rightVec, 0.35);
+
+ const cameraVector=idealPos.clone().sub(targetFollowLook),desiredCameraDistance=cameraVector.length();
+ if(desiredCameraDistance>0){cameraRay.set(targetFollowLook,cameraVector.normalize());cameraRay.far=desiredCameraDistance;const wallHit=cameraRay.intersectObjects(cameraOccluders,false)[0];if(wallHit)idealPos.copy(targetFollowLook).addScaledVector(cameraVector,globalThis.MeydanMotion.cameraCollisionDistance(desiredCameraDistance,wallHit.distance))}
 
  currentFollowPos.lerp(idealPos,Math.min(1,dt*6.0));
 

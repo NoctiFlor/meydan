@@ -1,3 +1,20 @@
+# MEYDAN 1.3 — Sosyal meydan temeli
+
+30 Ekim 2026. Android versionCode 4, versionName 1.3.
+
+- 11 çevrimdışı modül/sahne test grubu geçti: hareket, dans, üç beatmap, üç özgün
+  prosedürel müzik profili, kayıt/migrasyon, NPC davranışı, dünya bütçeleri,
+  etkinlikler, ekonomi, kamera hareketi ve özel-oda ağ protokolü.
+- Bağımsız HTML yeniden üretildi ve gömülü modüller sözdizimi denetiminden geçti.
+- Fiziksel telefon testi bu oturumda yapılmadı.
+- Bu çalışma ortamında JDK/Android SDK araçları bulunmadığından 1.3 APK yerelde
+  üretilemedi. GitHub Actions Android derlemesi PR dalı GitHub'a aktarıldıktan sonra
+  kesin paket doğrulamasıdır; aşağıdaki 1.2 Android sonuçları tarihsel kayıttır.
+- Canlı çok oyunculu sunucu yoktur; test edilen bölüm yalnızca çevrimdışı ve
+  deterministik protokol temelidir.
+
+---
+
 # MEYDAN 1.2 — Joystick ve yatay ritim sistemi
 
 29 Ekim 2026. Android versionCode 3, versionName 1.2.

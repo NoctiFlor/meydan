@@ -1,0 +1,40 @@
+{
+  "id": "sahil_ritmi",
+  "title": "Sahil Ritmi",
+  "artist": "MEYDAN · Özgün sentez",
+  "audio": null,
+  "bpm": 124,
+  "offsetMs": 0,
+  "previewStartSec": 0,
+  "synthStyle": "coastal-house",
+  "difficulties": {
+    "easy": {
+      "level": 3,
+      "baseLength": 3,
+      "patterns": [
+        ["left", "up", "right", "up", "down", "left", "right", "down", "up"],
+        ["right", "down", "left", "down", "up", "right", "left", "up", "down"],
+        ["up", "left", "up", "right", "down", "right", "down", "left", "up"],
+        ["down", "right", "up", "left", "right", "left", "up", "down", "right"],
+        ["left", "down", "right", "left", "up", "right", "down", "up", "left"],
+        ["up", "right", "left", "down", "right", "up", "left", "down", "up"],
+        ["right", "up", "down", "left", "up", "left", "right", "down", "right"],
+        ["down", "left", "right", "up", "left", "down", "up", "right", "down"]
+      ]
+    },
+    "hard": {
+      "level": 6,
+      "baseLength": 5,
+      "patterns": [
+        ["left", "up", "right", "up", "down", "left", "right", "down", "up"],
+        ["right", "down", "left", "down", "up", "right", "left", "up", "down"],
+        ["up", "left", "up", "right", "down", "right", "down", "left", "up"],
+        ["down", "right", "up", "left", "right", "left", "up", "down", "right"],
+        ["left", "down", "right", "left", "up", "right", "down", "up", "left"],
+        ["up", "right", "left", "down", "right", "up", "left", "down", "up"],
+        ["right", "up", "down", "left", "up", "left", "right", "down", "right"],
+        ["down", "left", "right", "up", "left", "down", "up", "right", "down"]
+      ]
+    }
+  }
+}

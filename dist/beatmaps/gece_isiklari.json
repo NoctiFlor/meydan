@@ -1,0 +1,40 @@
+{
+  "id": "gece_isiklari",
+  "title": "Gece Işıkları",
+  "artist": "MEYDAN · Özgün sentez",
+  "audio": null,
+  "bpm": 112,
+  "offsetMs": 0,
+  "previewStartSec": 0,
+  "synthStyle": "night-pop",
+  "difficulties": {
+    "easy": {
+      "level": 2,
+      "baseLength": 2,
+      "patterns": [
+        ["left", "right", "up", "left", "down", "right", "up", "down", "left"],
+        ["up", "up", "right", "down", "left", "right", "down", "left", "up"],
+        ["right", "left", "down", "up", "right", "down", "left", "up", "right"],
+        ["down", "right", "right", "up", "left", "down", "up", "left", "down"],
+        ["left", "up", "left", "right", "down", "up", "right", "down", "left"],
+        ["up", "right", "down", "left", "up", "down", "right", "left", "up"],
+        ["right", "down", "up", "right", "left", "up", "down", "left", "right"],
+        ["down", "left", "up", "right", "down", "right", "left", "up", "down"]
+      ]
+    },
+    "hard": {
+      "level": 5,
+      "baseLength": 4,
+      "patterns": [
+        ["left", "right", "up", "left", "down", "right", "up", "down", "left"],
+        ["up", "up", "right", "down", "left", "right", "down", "left", "up"],
+        ["right", "left", "down", "up", "right", "down", "left", "up", "right"],
+        ["down", "right", "right", "up", "left", "down", "up", "left", "down"],
+        ["left", "up", "left", "right", "down", "up", "right", "down", "left"],
+        ["up", "right", "down", "left", "up", "down", "right", "left", "up"],
+        ["right", "down", "up", "right", "left", "up", "down", "left", "right"],
+        ["down", "left", "up", "right", "down", "right", "left", "up", "down"]
+      ]
+    }
+  }
+}

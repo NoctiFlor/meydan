@@ -68,7 +68,7 @@ Exit: three distinct playable charts load offline and validate during CI.
 
 ## 6. Main menu, saves and progression
 
-- [ ] Add new game/continue, settings and profile shell.
+- [x] Add new game/continue, settings and profile shell.
 - [x] Save settings, scores, unlocks and progression locally with schema versioning.
 - [x] Add safe migration and corrupted-save recovery.
 - [x] Add reset-save confirmation.

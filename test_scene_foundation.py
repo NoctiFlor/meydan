@@ -34,5 +34,7 @@ require("main menu offers continue, new game and settings", all(item in shell fo
 require("new profiles collect a name and avatar style", 'id="profile-form"' in shell and 'name="avatar"' in shell and "progressionStore.createProfile" in game)
 require("front end blocks plaza movement until entry", "frontEndOpen&&!paused" in game and "function enterPlaza" in game)
 require("legacy saves remain available through continue", "profile.created" in game and "id=\"continue-summary\"" in shell)
+require("avatar choices create visibly different costume geometry", "avatar-style-costume" in game and all(color in game for color in ("#287f9d", "#33243f", "#6f493c")))
+require("avatar picker previews each costume palette", all(palette in shell for palette in ('data-avatar="classic"', 'data-avatar="sport"', 'data-avatar="night"')) and ".avatar-swatch:before" in shell)
 
 print("ALL SCENE FOUNDATION CHECKS PASSED")

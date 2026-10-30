@@ -2,6 +2,7 @@ from pathlib import Path
 
 
 game = (Path(__file__).parent / "dist" / "game.js").read_text(encoding="utf-8")
+shell = (Path(__file__).parent / "shell.html").read_text(encoding="utf-8")
 
 
 def require(label: str, condition: bool) -> None:
@@ -23,5 +24,8 @@ require("shop supports purchase and equip", "cosmeticEconomy.purchase(item.id)" 
 require("reset clears progression and cosmetic economy", "localStorage.removeItem('meydan.economy')" in game)
 require("camera checks plaza occluders", "cameraRay.intersectObjects(cameraOccluders" in game)
 require("all three original songs are registered", all(song in game for song in ("meydan_demo", "gece_isiklari", "sahil_ritmi")))
+require("dance HUD has left control, center beatmap and right confirm zones", all(name in shell for name in ('class="dance-left"', 'class="dance-center"', 'class="dance-confirm-wrap"')))
+require("dance direction buttons use an analog disc layout", ".keys{position:absolute;inset:5%;display:grid" in shell and ".key:nth-child(4){grid-column:3;grid-row:2" in shell)
+require("normal movement joystick is hidden during dance", 'body[data-dancing="true"] #joystick{display:none!important}' in shell)
 
 print("ALL SCENE FOUNDATION CHECKS PASSED")

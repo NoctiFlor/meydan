@@ -52,4 +52,6 @@ python test_package.py
 
 [Ayrıntılı yeniden derleme talimatı](YENIDEN_DERLEME.md) ·
 [Test raporu ve gerçek cihaz testinin durumu](TEST_RAPORU.md) ·
-[Telefondan kullanım ve bulut kurulumu](BULUT_KURULUM.md)
+[Telefondan kullanım ve bulut kurulumu](BULUT_KURULUM.md) ·
+[Eksiklik ve iyileştirme rehberi](docs/IMPROVEMENT_GUIDE.md) ·
+[Online sistem rehberi](docs/ONLINE_GUIDE.md)

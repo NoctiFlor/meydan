@@ -1,13 +1,14 @@
 // Versioned offline progression. Renderer-independent and exercised in Node.
 (() => {
-  const CURRENT_VERSION = 2;
+  const CURRENT_VERSION = 3;
   const DEFAULT_KEY = 'meydan.progression';
   const ALLOWED_QUALITIES = new Set(['low', 'medium', 'high', 'auto']);
+  const ALLOWED_AVATARS = new Set(['classic', 'sport', 'night']);
 
   function defaults() {
     return {
       version: CURRENT_VERSION,
-      profile: {name: 'Oyuncu', level: 1, xp: 0, coins: 0},
+      profile: {created: false, name: 'Oyuncu', avatar: 'classic', level: 1, xp: 0, coins: 0},
       settings: {sound: true, quality: 'auto', cameraSensitivity: 1},
       scores: {},
       unlocks: ['song:meydan_demo'],
@@ -35,7 +36,13 @@
       };
     }
     if (data.version === 1) data = {...data, version: 2, stats: data.stats || {}};
+    // Every v2 save came from a player who had already entered the old direct-to-plaza build.
+    if (data.version === 2) data = {...data, version: 3, profile:{...data.profile, created:true, avatar:data.profile?.avatar || 'classic'}};
     return data.version === CURRENT_VERSION ? data : defaults();
+  }
+
+  function normalizeProfileName(value) {
+    return String(value || '').replace(/[<>\u0000-\u001f\u007f]/g, '').trim().replace(/\s+/g, ' ').slice(0, 24);
   }
 
   function normalize(raw) {
@@ -65,7 +72,9 @@
     return {
       version: CURRENT_VERSION,
       profile: {
-        name: typeof profile.name === 'string' && profile.name.trim() ? profile.name.trim().slice(0, 24) : base.profile.name,
+        created: profile.created === true,
+        name: normalizeProfileName(profile.name) || base.profile.name,
+        avatar: ALLOWED_AVATARS.has(profile.avatar) ? profile.avatar : base.profile.avatar,
         level: Math.floor(finite(profile.level, 1, 1, 999)),
         xp: Math.floor(finite(profile.xp, 0, 0)),
         coins: Math.floor(finite(profile.coins, 0, 0))
@@ -122,6 +131,20 @@
       this.save();
       return {...this.data.settings};
     }
+    updateProfile(patch = {}) {
+      this.data.profile = {...this.data.profile, ...patch};
+      this.data = normalize(this.data);
+      this.save();
+      return {...this.data.profile};
+    }
+    createProfile(name, avatar = 'classic') {
+      const cleanName = normalizeProfileName(name);
+      if (!cleanName) return {ok:false, reason:'invalid-name'};
+      if (!ALLOWED_AVATARS.has(avatar)) return {ok:false, reason:'invalid-avatar'};
+      this.data = defaults();
+      this.data.profile = {...this.data.profile, created:true, name:cleanName, avatar};
+      return {ok:this.save(), profile:{...this.data.profile}};
+    }
     unlock(id) {
       if (typeof id !== 'string' || !id || id.length >= 80) return false;
       if (this.data.unlocks.includes(id)) return false;
@@ -151,5 +174,5 @@
     }
   }
 
-  globalThis.MeydanProgression = {CURRENT_VERSION, defaults, normalize, ProgressionStore};
+  globalThis.MeydanProgression = {CURRENT_VERSION, ALLOWED_AVATARS, defaults, normalize, normalizeProfileName, ProgressionStore};
 })();

@@ -23,11 +23,12 @@ let currentFollowPos=new THREE.Vector3(0,2,6);
 let currentFollowTarget=new THREE.Vector3(0,1,0);
 let stageFraming=0;
 let stageCamTransition=0; // 0 = follow cam, 1 = stage cam
+let frontEndOpen=true;
 
 const dom=renderer.domElement;
 let orbitPointerId=null;
 dom.addEventListener('pointerdown',e=>{
- if(!paused&&orbitPointerId===null&&(e.button===0||e.button===2)){
+ if(!frontEndOpen&&!paused&&orbitPointerId===null&&(e.button===0||e.button===2)){
   orbitPointerId=e.pointerId;
   dom.setPointerCapture(e.pointerId);
   isMouseDown=true;
@@ -283,8 +284,8 @@ async function boot(){try{
  }
  for(let name of ['idle','walk','run'])converted[name]=convertMotion(name);
  let source=g.scene;source.updateMatrixWorld(true);let b=new THREE.Box3().setFromObject(source),size=b.getSize(new THREE.Vector3());source.scale.multiplyScalar(1.78/size.y);source.updateMatrixWorld(true);b.setFromObject(source);source.position.y-=b.min.y;source.updateMatrixWorld(true);
- function spawn(x,z,offset,isMain=false,socialId=null,socialName=''){let root=new THREE.Group(),model=clone(source);root.add(model);root.position.set(x,.10,z);model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.frustumCulled=isMain?false:true}});scene.add(root);let mx=new THREE.AnimationMixer(model);mixers.push(mx);if(isMain){mainMixer=mx;for(let [name,clip]of Object.entries(converted))actionMap[name]=mx.clipAction(clip);actionMap.dance=mx.clipAction(g.animations.find(c=>c.name==='SambaDance'));player=root;setState('idle')}else{const profile=globalThis.MeydanMotion.avatarProfile(socialId);root.scale.setScalar(profile.scale);root.userData.avatarProfile=profile;root.add(makeNpcLabel(socialName));const actions={idle:mx.clipAction(converted.idle),walk:mx.clipAction(converted.walk),dance:mx.clipAction(g.animations.find(c=>c.name==='SambaDance'))};actions.idle.play();mx.setTime(profile.animationOffset);root.userData.socialId=socialId;npcs.push(root);npcActors.push({root,mixer:mx,actions,state:'idle'})}return root}
- spawn(-.5,1.1,0,true);socialDefinitions.forEach((definition,index)=>spawn(definition.x,definition.z,index*.73,false,definition.id,definition.name));ready=true;resetCamera();updateScore();updateProfileHud();applyCosmetics();document.getElementById('loading').remove();document.body.dataset.ready='true';notify(matchMedia('(pointer:coarse)').matches?'Hazır · joystick ile meydanı keşfet':'Hazır · WASD ile yürü, Shift ile koş');console.log('READY: embedded model, progression, social NPCs, three songs, collisions, follow camera');
+ function spawn(x,z,offset,isMain=false,socialId=null,socialName=''){let root=new THREE.Group(),model=clone(source);root.add(model);root.position.set(x,.10,z);model.traverse(o=>{if(o.isMesh){if(isMain&&o.material){o.material=o.material.clone();o.userData.baseAvatarColor=o.material.color?.clone()}o.castShadow=true;o.receiveShadow=true;o.frustumCulled=isMain?false:true}});scene.add(root);let mx=new THREE.AnimationMixer(model);mixers.push(mx);if(isMain){mainMixer=mx;for(let [name,clip]of Object.entries(converted))actionMap[name]=mx.clipAction(clip);actionMap.dance=mx.clipAction(g.animations.find(c=>c.name==='SambaDance'));player=root;setState('idle')}else{const profile=globalThis.MeydanMotion.avatarProfile(socialId);root.scale.setScalar(profile.scale);root.userData.avatarProfile=profile;root.add(makeNpcLabel(socialName));const actions={idle:mx.clipAction(converted.idle),walk:mx.clipAction(converted.walk),dance:mx.clipAction(g.animations.find(c=>c.name==='SambaDance'))};actions.idle.play();mx.setTime(profile.animationOffset);root.userData.socialId=socialId;npcs.push(root);npcActors.push({root,mixer:mx,actions,state:'idle'})}return root}
+ spawn(-.5,1.1,0,true);socialDefinitions.forEach((definition,index)=>spawn(definition.x,definition.z,index*.73,false,definition.id,definition.name));ready=true;resetCamera();updateScore();updateProfileHud();applyAvatarStyle();applyCosmetics();document.getElementById('loading').remove();document.body.dataset.ready='true';openStartMenu();console.log('READY: embedded model, progression, social NPCs, three songs, collisions, follow camera, main menu');
 }catch(e){window.showBootError('Oyun başlatılamadı: '+e.message);console.error(e)}}
 function updateSocialActors(dt){
  if(!player||!npcActors.length)return;
@@ -335,6 +336,7 @@ const songRegistry=[
  {id:'sahil_ritmi', title:'Sahil Ritmi', artist:'MEYDAN · Özgün sentez', bpm:124}
 ];
 function applyCosmetics(){if(!player)return;const previous=player.getObjectByName('equipped-effect');if(previous)player.remove(previous);const id=cosmeticEconomy.equipped.effect;if(!id)return;const color=id==='effect:mint-ring'?'#63c6a3':'#d4b47d';const ring=new THREE.Mesh(new THREE.RingGeometry(.48,.59,32),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.75,side:THREE.DoubleSide}));ring.name='equipped-effect';ring.rotation.x=-Math.PI/2;ring.position.y=.025;player.add(ring)}
+function applyAvatarStyle(){if(!player)return;const style=progressionStore.snapshot().profile.avatar;const accents={classic:'#c59a78',sport:'#4b91aa',night:'#6d587e'},accent=new THREE.Color(accents[style]||accents.classic);player.traverse(o=>{if(!o.isMesh||!o.material?.color||!o.userData.baseAvatarColor)return;o.material.color.copy(o.userData.baseAvatarColor).lerp(accent,.18)});const old=player.getObjectByName('avatar-style-marker');if(old)player.remove(old);const marker=new THREE.Mesh(new THREE.TorusGeometry(.37,.025,8,24),new THREE.MeshBasicMaterial({color:accent,transparent:true,opacity:.72}));marker.name='avatar-style-marker';marker.rotation.x=Math.PI/2;marker.position.set(0,1.08,.02);player.add(marker)}
 function renderShop(){const grid=document.getElementById('shop-grid');grid.replaceChildren();document.getElementById('shop-balance').textContent=`${cosmeticEconomy.balance} ◇`;for(const item of cosmeticEconomy.getCatalog()){const card=document.createElement('div');card.className='shop-item';const title=document.createElement('b');title.textContent=item.name;const meta=document.createElement('span');meta.textContent=item.owned?(item.equipped?'Kuşanıldı':'Sahipsin'):`${item.price} ◇`;const button=document.createElement('button');button.textContent=item.owned?(item.equipped?'Çıkar':'Kuşan'):'Satın al';button.onclick=()=>{const result=item.owned?(item.equipped?(cosmeticEconomy.unequip(item.category),{ok:true}):cosmeticEconomy.equip(item.id)):cosmeticEconomy.purchase(item.id);if(!result.ok){notify(result.reason==='insufficient_balance'?'Yeterli ◇ yok':'İşlem yapılamadı');return}saveEconomy();applyCosmetics();updateProfileHud();renderShop()};card.append(title,meta,button);grid.append(card)}}
 function openShop(){resetInput();renderShop();document.getElementById('shop').hidden=false}
 function closeShop(){document.getElementById('shop').hidden=true}
@@ -606,6 +608,11 @@ function updateScore(){
 }
 function updateProfileHud(){const data=progressionStore.snapshot();document.getElementById('profile-chip').textContent=`SV ${data.profile.level} · ${data.profile.coins} ◇`}
 function updateSettingsPanel(){const data=progressionStore.snapshot();const summary=document.getElementById('profile-summary');if(summary)summary.textContent=`${data.profile.name} · Seviye ${data.profile.level} · ${data.profile.xp} XP · ${data.profile.coins} ◇`;document.querySelectorAll('[data-quality]').forEach(button=>button.classList.toggle('active',button.dataset.quality===data.settings.quality))}
+function updateStartMenu(){const data=progressionStore.snapshot(),button=document.getElementById('continue-game');button.disabled=!data.profile.created;document.getElementById('continue-name').textContent=data.profile.created?`${data.profile.name} ile Devam Et`:'Devam Et';document.getElementById('continue-summary').textContent=data.profile.created?`Seviye ${data.profile.level} · ${data.stats.plays} dans · ${data.profile.coins} ◇`:'Henüz bir profil oluşturulmadı';document.getElementById('start-sound').textContent=data.settings.sound?'♫ Ses açık':'♫ Ses kapalı';document.querySelectorAll('[data-start-quality]').forEach(item=>item.classList.toggle('active',item.dataset.startQuality===data.settings.quality))}
+function showStartSection(section){for(const id of ['start-home','profile-form','start-settings-panel'])document.getElementById(id).hidden=id!==section;if(section==='start-home')updateStartMenu()}
+function openStartMenu(){resetInput();frontEndOpen=true;document.body.dataset.frontEnd='true';document.getElementById('startmenu').hidden=false;showStartSection('start-home')}
+function enterPlaza(message){frontEndOpen=false;document.body.dataset.frontEnd='false';document.getElementById('startmenu').hidden=true;resetInput();updateScore();updateProfileHud();updateSettingsPanel();applyAvatarStyle();applyCosmetics();notify(message||'Meydana hoş geldin!')}
+function resetEconomyForNewProfile(){cosmeticEconomy.balance=0;cosmeticEconomy.owned=new Set(cosmeticEconomy.catalog.filter(item=>item.starter).map(item=>item.id));cosmeticEconomy.equipped={};try{localStorage.removeItem('meydan.economy')}catch{}points=0}
 function showDanceFeedback(kind,text){const feedback=document.getElementById('dance-feedback');if(!feedback)return;feedback.textContent=text;feedback.className='dance-feedback '+kind;void feedback.offsetWidth;feedback.classList.add('show')}
 
 function judge(kind){
@@ -730,12 +737,21 @@ document.getElementById('help').onclick=()=>setPause(true);
 document.getElementById('sound').onclick=toggleSound;
 document.querySelectorAll('[data-setting]').forEach(button=>button.onclick=()=>document.getElementById(button.dataset.setting).click());
 document.querySelectorAll('[data-quality]').forEach(button=>button.onclick=()=>{progressionStore.updateSettings({quality:button.dataset.quality});updateSettingsPanel();notify('Grafik kalitesi kaydedildi · sonraki açılışta uygulanacak')});
-document.getElementById('reset-progress').onclick=()=>{if(!confirm('Tüm yerel skorlar, kozmetikler ve ilerleme silinsin mi?'))return;progressionStore.reset();cosmeticEconomy.balance=0;cosmeticEconomy.owned=new Set(cosmeticEconomy.catalog.filter(item=>item.starter).map(item=>item.id));cosmeticEconomy.equipped={};try{localStorage.removeItem('meydan.economy')}catch{}points=0;applyCosmetics();updateScore();updateProfileHud();updateSettingsPanel();notify('Yerel ilerleme sıfırlandı')};
+document.getElementById('continue-game').onclick=()=>{if(progressionStore.snapshot().profile.created)enterPlaza(`Tekrar hoş geldin, ${progressionStore.snapshot().profile.name}!`)};
+document.getElementById('new-game').onclick=()=>{const data=progressionStore.snapshot();if(data.profile.created&&!confirm('Yeni oyun mevcut profilini, skorlarını ve kozmetiklerini silecek. Devam edilsin mi?'))return;document.getElementById('profile-name').value=data.profile.created?'':data.profile.name==='Oyuncu'?'':data.profile.name;document.querySelector(`input[name="avatar"][value="${data.profile.avatar}"]`)?.click();document.getElementById('profile-error').textContent='';showStartSection('profile-form');document.getElementById('profile-name').focus()};
+document.getElementById('profile-cancel').onclick=()=>showStartSection('start-home');
+document.getElementById('profile-form').onsubmit=e=>{e.preventDefault();const name=document.getElementById('profile-name').value,avatar=document.querySelector('input[name="avatar"]:checked')?.value||'classic',result=progressionStore.createProfile(name,avatar);if(!result.ok){document.getElementById('profile-error').textContent=result.reason==='invalid-name'?'Lütfen geçerli bir oyuncu adı yaz.':'Profil oluşturulamadı.';return}resetEconomyForNewProfile();saveEconomy();enterPlaza(`Hoş geldin, ${result.profile.name}!`)};
+document.getElementById('start-settings').onclick=()=>{updateStartMenu();showStartSection('start-settings-panel')};
+document.getElementById('settings-back').onclick=()=>showStartSection('start-home');
+document.getElementById('start-sound').onclick=()=>{progressionStore.updateSettings({sound:!progressionStore.snapshot().settings.sound});soundOn=progressionStore.snapshot().settings.sound;updateStartMenu()};
+document.querySelectorAll('[data-start-quality]').forEach(button=>button.onclick=()=>{progressionStore.updateSettings({quality:button.dataset.startQuality});updateStartMenu()});
+document.getElementById('reset-progress').onclick=()=>{if(!confirm('Tüm yerel skorlar, kozmetikler ve ilerleme silinsin mi?'))return;progressionStore.reset();resetEconomyForNewProfile();applyCosmetics();updateScore();updateProfileHud();updateSettingsPanel();setPause(false);openStartMenu();notify('Yerel ilerleme sıfırlandı')};
 document.getElementById('again').onclick=()=>{startDance();document.activeElement.blur()};
 document.getElementById('closeresult').onclick=()=>{closeResultScreen();document.activeElement.blur()};
 
 window.addEventListener('keydown',e=>{
  if(e.target.matches('input,textarea'))return;
+ if(frontEndOpen){if(e.code==='Escape'){e.preventDefault();showStartSection('start-home')}return}
  if(sequence.includes(e.key)||e.key===' ')e.preventDefault();
  if(e.code==='Escape'){e.preventDefault();handleBack();return}
  if(paused||danceState===DANCE_STATES.PAUSED||danceState===DANCE_STATES.RESULTS||!document.getElementById('songselect').hidden)return;
@@ -789,6 +805,7 @@ window.meydanForeground=resetInput;
 window.meydanBack=handleBack;
 function handleBack(){
  resetInput();
+ if(frontEndOpen){showStartSection('start-home');return}
  if(!document.getElementById('dancepause').hidden){quitDanceFromPause();return}
  if(!document.getElementById('songselect').hidden){closeSongSelect();return}
  if(!document.getElementById('shop').hidden){closeShop();return}
@@ -816,7 +833,7 @@ bindPress(document.getElementById('confirm-beat'),()=>{if(danceState===DANCE_STA
 for(const event of ['pointerup','pointercancel'])window.addEventListener(event,e=>dancePointers.delete(e.pointerId));
 
 const joystickPad=document.getElementById('joystick');
-function canWalk(){return !paused&&danceState===DANCE_STATES.IDLE&&document.getElementById('songselect').hidden&&document.getElementById('shop').hidden}
+function canWalk(){return !frontEndOpen&&!paused&&danceState===DANCE_STATES.IDLE&&document.getElementById('songselect').hidden&&document.getElementById('shop').hidden}
 function moveJoystick(e){
  if(e.pointerId!==joystickPointer)return;
  const value=analogVector(e.clientX-joystickCenter.x,e.clientY-joystickCenter.y,joystickCenter.radius);

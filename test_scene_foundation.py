@@ -30,5 +30,9 @@ require("normal movement joystick is hidden during dance", 'body[data-dancing="t
 require("dance judgements have visible animated feedback", 'id="dance-feedback"' in shell and "showDanceFeedback(kind" in game and "'PERFECT!'" in game)
 require("wrong direction visibly restarts the full phrase", "showDanceFeedback('wrong','BAŞTAN!')" in game and "result==='wrong'" in game)
 require("wrong direction also clears combo and entered-arrow visuals", "danceGame.combo=0" in game and "row.classList.add('resetting')" in game)
+require("main menu offers continue, new game and settings", all(item in shell for item in ('id="continue-game"', 'id="new-game"', 'id="start-settings"')))
+require("new profiles collect a name and avatar style", 'id="profile-form"' in shell and 'name="avatar"' in shell and "progressionStore.createProfile" in game)
+require("front end blocks plaza movement until entry", "frontEndOpen&&!paused" in game and "function enterPlaza" in game)
+require("legacy saves remain available through continue", "profile.created" in game and "id=\"continue-summary\"" in shell)
 
 print("ALL SCENE FOUNDATION CHECKS PASSED")

@@ -336,7 +336,32 @@ const songRegistry=[
  {id:'sahil_ritmi', title:'Sahil Ritmi', artist:'MEYDAN · Özgün sentez', bpm:124}
 ];
 function applyCosmetics(){if(!player)return;const previous=player.getObjectByName('equipped-effect');if(previous)player.remove(previous);const id=cosmeticEconomy.equipped.effect;if(!id)return;const color=id==='effect:mint-ring'?'#63c6a3':'#d4b47d';const ring=new THREE.Mesh(new THREE.RingGeometry(.48,.59,32),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.75,side:THREE.DoubleSide}));ring.name='equipped-effect';ring.rotation.x=-Math.PI/2;ring.position.y=.025;player.add(ring)}
-function applyAvatarStyle(){if(!player)return;const style=progressionStore.snapshot().profile.avatar;const accents={classic:'#c59a78',sport:'#4b91aa',night:'#6d587e'},accent=new THREE.Color(accents[style]||accents.classic);player.traverse(o=>{if(!o.isMesh||!o.material?.color||!o.userData.baseAvatarColor)return;o.material.color.copy(o.userData.baseAvatarColor).lerp(accent,.18)});const old=player.getObjectByName('avatar-style-marker');if(old)player.remove(old);const marker=new THREE.Mesh(new THREE.TorusGeometry(.37,.025,8,24),new THREE.MeshBasicMaterial({color:accent,transparent:true,opacity:.72}));marker.name='avatar-style-marker';marker.rotation.x=Math.PI/2;marker.position.set(0,1.08,.02);player.add(marker)}
+function avatarPiece(group,geometry,color,position,rotation={x:0,y:0,z:0},metalness=.05){const piece=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color,roughness:.68,metalness}));piece.position.set(position.x,position.y,position.z);piece.rotation.set(rotation.x||0,rotation.y||0,rotation.z||0);piece.castShadow=true;piece.receiveShadow=true;group.add(piece);return piece}
+function applyAvatarStyle(){
+ if(!player)return;
+ const style=progressionStore.snapshot().profile.avatar;
+ player.traverse(o=>{if(o.isMesh&&o.material?.color&&o.userData.baseAvatarColor)o.material.color.copy(o.userData.baseAvatarColor)});
+ const previous=player.getObjectByName('avatar-style-costume');if(previous)player.remove(previous);
+ const costume=new THREE.Group();costume.name='avatar-style-costume';costume.userData.style=style;player.add(costume);
+ if(style==='sport'){
+  avatarPiece(costume,new THREE.CylinderGeometry(.29,.24,.48,12),'#287f9d',{x:0,y:1.18,z:0});
+  avatarPiece(costume,new THREE.BoxGeometry(.54,.10,.27),'#e7f0ed',{x:0,y:1.32,z:.01});
+  avatarPiece(costume,new THREE.BoxGeometry(.38,.07,.30),'#f0b45e',{x:0,y:.93,z:.01});
+  for(const side of[-1,1])avatarPiece(costume,new THREE.TorusGeometry(.075,.025,7,16),'#f0b45e',{x:side*.39,y:1.25,z:0},{x:Math.PI/2});
+ }else if(style==='night'){
+  avatarPiece(costume,new THREE.BoxGeometry(.60,.56,.25),'#33243f',{x:0,y:1.20,z:0});
+  avatarPiece(costume,new THREE.BoxGeometry(.12,.48,.28),'#8458a7',{x:-.20,y:1.20,z:.01},{z:-.09},.22);
+  avatarPiece(costume,new THREE.BoxGeometry(.12,.48,.28),'#8458a7',{x:.20,y:1.20,z:.01},{z:.09},.22);
+  avatarPiece(costume,new THREE.BoxGeometry(.68,.09,.31),'#15151d',{x:0,y:.92,z:0},undefined,.35);
+  for(const side of[-1,1])avatarPiece(costume,new THREE.SphereGeometry(.14,10,8),'#6d3e8d',{x:side*.36,y:1.42,z:0},undefined,.24);
+ }else{
+  avatarPiece(costume,new THREE.BoxGeometry(.56,.55,.23),'#6f493c',{x:0,y:1.20,z:0});
+  avatarPiece(costume,new THREE.BoxGeometry(.17,.48,.26),'#b58a68',{x:-.15,y:1.20,z:.01},{z:-.10});
+  avatarPiece(costume,new THREE.BoxGeometry(.17,.48,.26),'#b58a68',{x:.15,y:1.20,z:.01},{z:.10});
+  avatarPiece(costume,new THREE.ConeGeometry(.055,.30,4),'#d5b873',{x:0,y:1.24,z:.15},{z:Math.PI});
+  avatarPiece(costume,new THREE.BoxGeometry(.58,.07,.27),'#2d2b2a',{x:0,y:.93,z:0});
+ }
+}
 function renderShop(){const grid=document.getElementById('shop-grid');grid.replaceChildren();document.getElementById('shop-balance').textContent=`${cosmeticEconomy.balance} ◇`;for(const item of cosmeticEconomy.getCatalog()){const card=document.createElement('div');card.className='shop-item';const title=document.createElement('b');title.textContent=item.name;const meta=document.createElement('span');meta.textContent=item.owned?(item.equipped?'Kuşanıldı':'Sahipsin'):`${item.price} ◇`;const button=document.createElement('button');button.textContent=item.owned?(item.equipped?'Çıkar':'Kuşan'):'Satın al';button.onclick=()=>{const result=item.owned?(item.equipped?(cosmeticEconomy.unequip(item.category),{ok:true}):cosmeticEconomy.equip(item.id)):cosmeticEconomy.purchase(item.id);if(!result.ok){notify(result.reason==='insufficient_balance'?'Yeterli ◇ yok':'İşlem yapılamadı');return}saveEconomy();applyCosmetics();updateProfileHud();renderShop()};card.append(title,meta,button);grid.append(card)}}
 function openShop(){resetInput();renderShop();document.getElementById('shop').hidden=false}
 function closeShop(){document.getElementById('shop').hidden=true}

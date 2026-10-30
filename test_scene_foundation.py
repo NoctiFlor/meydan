@@ -25,7 +25,9 @@ require("reset clears progression and cosmetic economy", "localStorage.removeIte
 require("camera checks plaza occluders", "cameraRay.intersectObjects(cameraOccluders" in game)
 require("all three original songs are registered", all(song in game for song in ("meydan_demo", "gece_isiklari", "sahil_ritmi")))
 require("dance HUD has left control, center beatmap and right confirm zones", all(name in shell for name in ('class="dance-left"', 'class="dance-center"', 'class="dance-confirm-wrap"')))
-require("dance direction buttons use an analog disc layout", ".keys{position:absolute;inset:5%;display:grid" in shell and ".key:nth-child(4){grid-column:3;grid-row:2" in shell)
+require("dance direction buttons use an analog disc layout", ".keys{position:absolute;inset:1%;display:grid" in shell and ".key:nth-child(4){grid-column:3;grid-row:2" in shell)
 require("normal movement joystick is hidden during dance", 'body[data-dancing="true"] #joystick{display:none!important}' in shell)
+require("dance judgements have visible animated feedback", 'id="dance-feedback"' in shell and "showDanceFeedback(kind" in game and "'PERFECT!'" in game)
+require("wrong direction visibly restarts the full phrase", "showDanceFeedback('wrong','BAŞTAN!')" in game and "result==='wrong'" in game)
 
 print("ALL SCENE FOUNDATION CHECKS PASSED")

@@ -606,6 +606,7 @@ function updateScore(){
 }
 function updateProfileHud(){const data=progressionStore.snapshot();document.getElementById('profile-chip').textContent=`SV ${data.profile.level} · ${data.profile.coins} ◇`}
 function updateSettingsPanel(){const data=progressionStore.snapshot();const summary=document.getElementById('profile-summary');if(summary)summary.textContent=`${data.profile.name} · Seviye ${data.profile.level} · ${data.profile.xp} XP · ${data.profile.coins} ◇`;document.querySelectorAll('[data-quality]').forEach(button=>button.classList.toggle('active',button.dataset.quality===data.settings.quality))}
+function showDanceFeedback(kind,text){const feedback=document.getElementById('dance-feedback');if(!feedback)return;feedback.textContent=text;feedback.className='dance-feedback '+kind;void feedback.offsetWidth;feedback.classList.add('show')}
 
 function judge(kind){
  let values={perfect:1000,great:650,good:350,miss:0};
@@ -620,6 +621,7 @@ function judge(kind){
  document.getElementById('combo').textContent='KOMBO ×'+danceGame.combo;
  document.getElementById('score').textContent=danceGame.roundScore.toLocaleString('tr-TR');
  status.textContent=kind==='perfect'?'PERFECT!':kind==='great'?'GREAT!':kind==='good'?'GOOD':'MISS';
+ showDanceFeedback(kind,kind==='perfect'?'PERFECT!':kind==='great'?'GREAT!':kind==='good'?'GOOD!':'MISS!');
 }
 
 function danceElapsed(){return getGameTimeSec()-danceGame.startSec}
@@ -641,14 +643,14 @@ function input(k){
  const time=danceElapsed();
  const result=phraseEngine.press(sequence.indexOf(k),time);
  syncDance(time);
- if(result==='wrong')status.textContent='Yanlış yön · diziyi baştan gir';
+ if(result==='wrong'){status.textContent='Yanlış yön · diziyi baştan gir';showDanceFeedback('wrong','BAŞTAN!')}
  else if(result==='complete')status.textContent='Dizi hazır · altın hedefte RİTİM / Space!';
 }
 function confirmDance(){
  if(paused||document.hidden||danceState!==DANCE_STATES.PLAYING)return;
  const time=danceElapsed(),result=phraseEngine.confirm(time);
  syncDance(time);
- if(result==='incomplete')status.textContent='Önce ok dizisini tamamla';
+ if(result==='incomplete'){status.textContent='Önce ok dizisini tamamla';showDanceFeedback('incomplete','OKLARI TAMAMLA')}
 }
 let renderedPhrase='';
 function renderPhrase(time){

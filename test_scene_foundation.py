@@ -36,5 +36,7 @@ require("front end blocks plaza movement until entry", "frontEndOpen&&!paused" i
 require("legacy saves remain available through continue", "profile.created" in game and "id=\"continue-summary\"" in shell)
 require("avatar choices create visibly different costume geometry", "avatar-style-costume" in game and all(color in game for color in ("#287f9d", "#33243f", "#6f493c")))
 require("avatar picker previews each costume palette", all(palette in shell for palette in ('data-avatar="classic"', 'data-avatar="sport"', 'data-avatar="night"')) and ".avatar-swatch:before" in shell)
+require("NPCs receive at least six deterministic visual variants", "const NPC_STYLE_PROFILES=[" in game and game.count("head:'") >= 8 and "applyNpcAppearance(root,styleIndex)" in game)
+require("NPC labels shrink and fade with distance", "sprite.scale.set(.84,.21,1)" in game and "labelDistance<8" in game and "actor.label.material.opacity" in game)
 
 print("ALL SCENE FOUNDATION CHECKS PASSED")

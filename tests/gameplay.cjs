@@ -14,7 +14,12 @@ let game=new SequenceDance(120,[pattern,pattern,pattern,pattern],2);
 assert.equal(game.confirm(.1),'incomplete');assert.deepEqual(game.takeResults(),[]);
 assert.equal(game.press(0,.2),'correct');assert.equal(game.press(3,.3),'wrong');
 assert.equal(game.position,0);
+assert.deepEqual(game.lastReset,{reason:'wrong-direction',from:1,index:0});
 game.press(0,.4);game.press(1,.5);assert.deepEqual(game.takeResults(),[]);
+assert.equal(game.press(3,.55),'wrong'); // extra direction after completion resets too
+assert.equal(game.position,0);
+assert.deepEqual(game.lastReset,{reason:'extra-direction',from:2,index:0});
+game.press(0,.6);game.press(1,.7);
 assert.equal(game.confirm(game.target),'perfect');assert.equal(game.confirm(game.target),'inactive');
 assert.deepEqual(game.takeResults(),[{kind:'perfect',index:0}]);
 game.update(4);game.press(0,4.1);game.press(1,4.2);game.confirm(game.target);

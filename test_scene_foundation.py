@@ -29,5 +29,6 @@ require("dance direction buttons use an analog disc layout", ".keys{position:abs
 require("normal movement joystick is hidden during dance", 'body[data-dancing="true"] #joystick{display:none!important}' in shell)
 require("dance judgements have visible animated feedback", 'id="dance-feedback"' in shell and "showDanceFeedback(kind" in game and "'PERFECT!'" in game)
 require("wrong direction visibly restarts the full phrase", "showDanceFeedback('wrong','BAŞTAN!')" in game and "result==='wrong'" in game)
+require("wrong direction also clears combo and entered-arrow visuals", "danceGame.combo=0" in game and "row.classList.add('resetting')" in game)
 
 print("ALL SCENE FOUNDATION CHECKS PASSED")

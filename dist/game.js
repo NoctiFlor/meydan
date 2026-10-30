@@ -643,7 +643,11 @@ function input(k){
  const time=danceElapsed();
  const result=phraseEngine.press(sequence.indexOf(k),time);
  syncDance(time);
- if(result==='wrong'){status.textContent='Yanlış yön · diziyi baştan gir';showDanceFeedback('wrong','BAŞTAN!')}
+ if(result==='wrong'){
+  danceGame.combo=0;document.getElementById('combo').textContent='KOMBO ×0';
+  renderPhrase(time);const row=document.getElementById('notes');row.classList.remove('resetting');void row.offsetWidth;row.classList.add('resetting');setTimeout(()=>row.classList.remove('resetting'),260);
+  status.textContent='Yanlış yön · bütün diziyi baştan gir';showDanceFeedback('wrong','BAŞTAN!')
+ }
  else if(result==='complete')status.textContent='Dizi hazır · altın hedefte RİTİM / Space!';
 }
 function confirmDance(){
